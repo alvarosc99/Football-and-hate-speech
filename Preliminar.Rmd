@@ -1,0 +1,16 @@
+---
+title: "Preliminary"
+author: '100385774'
+date: "2023-02-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+da <- data.table::fread("data/football_terms_topics_a_sample.csv.gz")
+db <- data.table::fread("data/football_terms_topics_b_sample.csv.gz")
+```
+
