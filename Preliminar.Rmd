@@ -10,7 +10,52 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-da <- data.table::fread("data/football_terms_topics_a_sample.csv.gz")
-db <- data.table::fread("data/football_terms_topics_b_sample.csv.gz")
+library(data.table)
+library(tidyverse)
+library(openxlsx)
+```
+# Tweets
+
+```{r}
+
+data1 <- as.data.frame(data.table::fread("data/football_mentions_players.csv.gz"))
+data2 <- as.data.frame(data.table::fread("data/football_mentions_teams.csv.gz"))
+data3 <- as.data.frame(data.table::fread("data/football_players_cr.csv.gz"))
+data4 <- as.data.frame(data.table::fread("data/football_players_de.csv.gz"))
+data5 <- as.data.frame(data.table::fread("data/football_players_es.csv.gz"))
+data6 <- as.data.frame(data.table::fread("data/football_players_jp.csv.gz"))
+data7 <- as.data.frame(data.table::fread("data/football_players_ma.csv.gz"))
+data8 <- as.data.frame(data.table::fread("data/football_teams.csv.gz"))
+data9 <- as.data.frame(data.table::fread("data/football_terms.csv.gz"))
+
+```
+
+```{r}
+data <- bind_rows(data1, data2, data3, data4, data5, data6, data7, data8, data9)
+```
+
+```{r}
+#write.xlsx(data, file = "preliminar.xlsx", row.names = FALSE, sheetName = "Tweets")
+```
+
+#Accounts
+
+```{r}
+profiles <- data.table::fread("data/SEFutbol.csv.gz")
+```
+
+Interesting variables:public_metrics.followers_count , public_metrics.following_count, public_metrics.tweet_count , created_at
+
+```{r}
+ 
+profiles <- profiles %>% 
+  select(c(id, created_at, public_metrics.followers_count, public_metrics.following_count, public_metrics.tweet_count))
+
+```
+
+## Filters histograms: 
+
+```{r}
+
 ```
 
