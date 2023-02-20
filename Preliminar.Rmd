@@ -56,6 +56,43 @@ profiles <- profiles %>%
 ## Filters histograms: 
 
 ```{r}
+#Data preparation: 
+
+profiles <- profiles %>% 
+  mutate_if(is.integer, as.numeric)
+```
+
+
+```{r}
+#Followers count: 
+profiles %>% 
+  filter(public_metrics.followers_count < 10000) %>% 
+  ggplot(aes(x = public_metrics.followers_count)) +
+  geom_histogram(bins = 100) +
+  scale_x_continuous(limits = c(0,2500))
+```
+
+```{r}
+# Created at: 
+profiles %>% 
+  filter(created_at > 01/01/2006) %>% 
+  ggplot(aes(created_at)) +
+  geom_histogram(bins = 100)
+
+summary(profiles$created_at)
+```
+
+```{r}
+
+#Following count: 
+profiles %>% 
+  filter(public_metrics.following_count < 10000) %>% 
+  ggplot(aes(x = public_metrics.followers_count)) +
+  geom_histogram(bins = 100) +
+  scale_x_continuous(limits = c(0,2500)) + 
+  scale_y_continuous(limits = c(0,100000))
+
+summary(profiles$public_metrics.following_count)
 
 ```
 
