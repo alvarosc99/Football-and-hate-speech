@@ -1,0 +1,363 @@
+---
+title: "Literature review"
+output: pdf_document
+bibliography: references.bib
+---
+
+# Literature review
+
+## 1. Can Exposure to Celebrities Reduce Prejudice? The Effect of Mohamed Salah on Islamophobic Behaviors and Attitudes
+
+-   They study if Mohamed Salah joining to Liverpool F.C. had an effect on islamophobia in England.
+
+-   They use 15 million tweets and hate crime reports + a treatment/control groups
+
+-   They find that this exposure to Salah dropped a 16% the hate crimes in Liverpool and halved their rates of anti-muslim tweets relative to fans of other top clubs.
+
+### The parasocial contact hypothesis
+
+-   Contact hypothesis: personal contact across social lines can reduce prejudice if it's positive, endorsed by the communal authorities, egalitarian... (Allport, 1954) But in reality, there's a lack of opportunities for this to happen
+
+-   Parasocial contact hypothesis: As it's rare to happen, mediated contact (through media) with members of minority groups has the potential to reduce prejudice; although it's also been used to prove that negative media coverage can exacerbate prejudice + "the conditions under which parasocial contact might be successul have yet to be systematically tested".
+
+    -   Some criteria: repeated exposure, a positive experience and a salient out-group identity.
+
+### Methodology
+
+-   They use hate crime data from 25 police departments in England between 2015 and 2018 and they generate a counterfactual hate crime rate for the police force for Liverpool.
+
+-   They compare the frequency of anti-Muslim tweets produced by fans of Liverpool with tweets by fans of other English clubs over time.
+
+    -   Scraping user IDs of all followers from various teams, applying temporal filters for the oldest followers and geographical ones for the ones living in the UK only based on the text and their self-reported location --\> then randomly selecting 10000 from each team + scraping the most recent tweets from them (up to 3200)
+
+    -   To identify anti-Muslim tweets:
+
+        -   Beginning by identifying all tweets about Muslims using a generic keyword search. + using word2vec (a neural network that processes text) to find other relevant terms in the data: they included relevant keywords that featured in the top 50 words that word2vec model indicated that were the most similar to "muslim" and "islam".
+
+        -   About 44000 tweets of the 15 million contained one of these relevant kewords --\> Sample of 1500 --\> 3 coders classifying these tweets as anti-muslim or not.
+
+        -   With this human-coded data, they trained a Naive-Bayes classifier to classify all tweets containing one of the keywords as anti-Muslim or not (the 44000 tweets) --\> With this, they could compute the monthly proportion of tweets with the keywords that were anti-Muslim.
+
+    -   They then compare the rates of anti-Muslim tweets posted by fans of Liverpool vs. Other clubs (control group).
+
+-   Additionally they run an experimental survey
+
+### Conclusions
+
+The parasocial hypothesis is supported: exposition to Mohammed Salah reduces hate crimes and anti-muslim speech among Liverpool fans compared to other clubs fans.
+
+# 2. Relationships Between Crime and Twitter Activity Around Stadiums
+
+They use aggregated monthly crime data for 2km around football stadiums and geo-localized tweets for the same study area, and they try to establish relationships between both.
+
+However, their tweet analysis strategy relies only on if tweets contains a violent word or not --\> We can't use their methodology.
+
+One thing we can take into consideration is their findings: There are relationships between tweets and crime occurrences --\> This could also happen in the case of hateful tweets in the case of the World Cup.
+
+# 3. Modelling Political Disaffection from Twitter Data
+
+They analyse the phenomenon of political disaffection collecting a massive database of Italian Twitter Data (35 million tweets) exploiting scalable state-of-the-art machine learning techniques to generate time-series concerning the political disaffection discourse. They also compare their time-series indicator with public opinion surveys to check for correlation between them.
+
+## Related works
+
+-   Twitter has been discussed as feasible or not to substitute traditional public opinion surveys (debate on this and mixed results)
+
+## Data and methodology
+
+-   They classify tweets as related to political dissafection or not by: 1. Political 2. Negative 3. General --\> They filter an enormous amount of tweets using machine learning techniques by these 3 criteria.
+
+1.  Training TwitterData
+    -   2 step procedure involving semiautomatic search with the Twitter API + labeling phase by experts
+    -   Collected about 120000 tweets from a geolocalized search + search on political themes
+    -   40 students classified 3000 tweets each, in +1 Political +1 Negative +1General
+    -   They end up having 28340 tweets labeled on political and sentiment categories
+2.  Training NewspaperData
+    -   The Training Data can be limited because the narrow period of time of the tweets;
+    -   They build up an additional dataset with article titles of Italian newspapers of all spectrum, and employed categorization: If political, +1.
+3.  Italian Twitter Community Data
+    -   The corpus that will be used to classify.
+    -   Randomly selecting accounts and followers from Italy and all their tweets in the time span --\> 35M tweets.
+4.  Public Opinion Surveys: political dissafection question.
+
+**Classification approach for the Political Dissafection:**
+
+-   A political disaffection tweet has to match the 3 conditions.
+
+-   Since a classifier can't consider these 3 criteria at the same time, they build a 'chain' of classifiers: the relevant tweets after the 3 steps are classified as relevant, and the other as not relevant.
+
+    -   Note: as general speech isn't objectively definable, they used a set of keywords identified by experts to model it. They selected as general the tweets that contained those n-grams.
+
+#### Feature extraction approaches:
+
+The most important thing in text classification is how to convert text into numerical features. Identifying the best method for this is not easy, so they compared different techniques: n-grams of characters, single words, 1,2,3-grams of words and string kernels. For each of this techniques, they computed Term Frequency, Boolean term presence, and TF-IDF. Stemming and converting synonims to single features was also good for improving performance (done employing a synonyms dictionary).
+
+With a 4 fold CV using an 'online linear classifier', they achieved the best results with 5-grams of characters and space-separated word tokenization.
+
+#### Tested Classification Algorithms:
+
+-   ALMA
+
+-   OIPCAC
+
+-   PASSIVE AGGRESIVE
+
+-   PEGASOS
+
+-   RANDOM FOREST
+
+They tested separately the Political and the Negative classificators. OIPCAC gave the best results for the first one, and Random Forest for the second, except for it had a very long running time, so they chose Passive Aggresive and ALMA combined.
+
+# 4. Detecting Twitter hate speech in COVID-19 era using machine learning and ensemble learning techniques
+
+They extract Twitter Data using query searches with some trending hashtags, manually classifying into Normal and Hate and creating a classifier that classifies tweets into hate and non-hate using several fine tuned ML techniques. They perform an hybrid features engineering merging TF/IDF, Bag of Words and Tweet Length.
+
+### Related works
+
+There are some issues for automated hate speech detection:
+
+-   Word ambiguity: can give high false-positive rates, when a single word has multiple meanings in different situations.
+
+-   Spelling variety problem: when users replace intentionally or not some characters in order to obfuscate the detection methods in Twitter that would mark their tweet as hateful and potentially be deleted.
+
+Previous works have used TF/IDF and PoS, along with neural networks, to extract features, getting mixed results. Other works have done the categorization in 2 steps: 1) Abusive language , 2) Hateful
+
+### Methodology
+
+They collect data from Twitter using some hashtags (#CoronaTerrorism, #CoronaJihad, #MuslimCorona), analyze the tweet length distribution, manually annotate 11k tweets and then remove some to balance the dataset. They perform a pre-processing step to remove noise, for example replacing emojis and abbreviations for their respective words, lemmatizing and removing stopwords.
+
+For the Feature Engineering process, they extract various features by techniques such as TF-IDF, bag of words and sentence length, as well as emphatic features (!, for example).
+
+They employ traditional machine learning algorithms like Logistic Regression, Multinomial Naive Bayes, Support Vector Machine and Decision Tree, as well as Bagging, Adaboost, RF and Gradient Boosting.
+
+# 5. Right-wing German Hate Speech on Twitter: Analysis and Automatic Detection
+
+They collect over 50000 hateful tweets from 100+ right-wing German Twitter Users, identifying 112 subversive profiles and then collecting their tweets. Subversive profiles are those that 1) post tweets with racial slurs, profanity and violent rethoric, 2) do it repeatedly and consistently and 3) indicate far-right ideology, directly or indirectly. They also collected over 50000 safe tweets for comparison.
+
+In compliance with the EU General Data Protection Regulation no personal data was retained after the analysis except for the tweets IDs, which can be used to reconstruct the dataset with the Twitter API if necessary.
+
+#### Hate speech definition
+
+They describe abuse in 2 dimensions: the specificity of the target and the degree of explicitness, discerning 4 categories: 1) directed and explicit, 2) directed and implicit (sarcasm), 3) generalized and explicit , 4) generalized and implicit.
+
+#### Analysis
+
+They perform qualitative and quantitative analysis. In the quantitative analysis they do word clusters, word trees and word polarity, as well as automated detection. They vectorize each tweet making each feature a word, and the weights being word counts, using the Perceptron algorithm and character trigrams as features. Additionally they use character unigrams and bigrams, which boosts the performance a 2% (84.21% F1 score).
+
+# 6. Hateful Symbols or Hateful People? Predictive Features for Hate Speech Detection on Twitter
+
+They use a list of criteria founded in critical race theory and use it to annotate more than 16k tweets, analyzing the impact of various extra-linguistic features in combination with character n-grams for hate speech detection. They also present a dictionary based the most indicative words in the data.
+
+The importance of detecting and moderating hate speech is evident from the strong connection between hate speech and actual hate crimes. Much of this moderation requires manual review, which has limits and introduces subjective notions of what's hate speech.
+
+### Data
+
+They perform an initial manual search of common slurs and terms used pertaining to religious, sexual, gender and ethnic minorities. Tweets were manually annotated using the criteria observed in McIntosh (2003):
+
+tweet is offensive if it
+
+1\. uses a sexist or racial slur.
+
+2\. attacks a minority.
+
+3\. seeks to silence a minority.
+
+4\. criticizes a minority (without a well foundedargument).
+
+5\. promotes, but does not directly use, hatespeech or violent crime.
+
+6\. criticizes a minority and uses a straw man argument.
+
+7\. blatantly misrepresents truth or seeks to distortviews on a minority with unfoundedclaims.
+
+8\. shows support of problematic hash tags. E.g."#BanIslam", "#whoriental", "#whitegenocide"
+
+9\. negatively stereotypes a minority.
+
+10\. defends xenophobia or sexism.
+
+11\. contains a screen name that is offensive, as per the previous criteria, the tweet is ambiguous (at best), and the tweet is on a topic that satisfies any of the above criteria.
+
+### Analysis
+
+-   Demographic distribution: Twitter doesn't offer this information, so they extract it by proxies, using the username.
+
+    -   Gender: heavily skewed towards men
+
+-   Lexical distribution: They remove stopwords with the exception of "not", special markers such as RT and punctuation signs. They also add the tweet length and the length of user descriptions.
+
+-   Geographical distribution: also constructed by proxy
+
+### Evaluation
+
+They use a 10 fold Logistic Regression classifier.
+
+-   Model selection: character n-grams outperforms word n-grams by 5 F1-score points. Using up to 4-grams of characters plus gender as an additional feature the results are the best (not location, as it's detrimental).
+
+-   Features: they use from unigrams to 4-grams of characters for each tweet and for each user description. They see that the most important features are the ones that correspond to the most frequent terms.
+
+-   Gender and length of the tweet and the description, as said, improve the performance.
+
+# 7. Cyber Hate Speech on Twitter: An Application of Machine Classification and Statistical Modeling for Policy and Decision Making
+
+Traditional surveys research has discovered that crimes with a prejudicial motive are influenced in the short term by singular events such as murders, riots, court cases and terrorist acts. Hate crimes tend to cluster in time and tend to increase in the aftermath of a trigger event; the impacts of these crimes are well documented but little research is done regarding to when do they happen.
+
+Collecting and analyzing temporal data allows decision makers to study the escalation, duration, diffusion and de-escalation of hate crimes following "trigger" events. However, the information is limited because the obtained data is of very low granularity, with a lot of missing information (hate crimes are largely unreported to the police).
+
+Twitter is a defensible and logical source of data for such analysis given that users of social media are more likely to express emotional content due to deindividuation (anonymity, lack of self-awareness in groups, disinhibition). To date there has been very little research into the manifestation and diffusion of hate speech and antagonistic content in social media in relation to events that could be classed as "trigger" events for hate crimes.
+
+They present a supervised ML classifier to identify online hate speech using Twitter data. A key contribution of this study is therefore the production of a machine classifier that could be developed into a technical solution for use by policymakers as part of an existing evidence-based decision-making process.
+
+### Related work
+
+Specifically focusing on hateful and/or antagonistic content, Greevy and Smeaton (2004) classified racist content in Web pages using a supervised machine learning approach with a bag-of-words (BoW) as features. A BoW approach uses words within a corpus as predictive features and ignores word sequence as well as any syntactic or semantic content. This approach can lead to misclassification due to word use in different contexts and, if words are used as a primary features for classification, it has been shown that combining sequential words into ngrams (list of words occurring in sequence from 1--n) improves classifier performance by incorporating some degree of context into the features (Pendar, 2007).
+
+Dinakar, Jones, Havasi, Lieberman, and Picard (2012) also focused on the identification of cyberbullying using a BoW approach, but also incorporated lists of profane words, parts-of-speech and words with negative connotations as machine learning features.
+
+### Data collection
+
+We collected the study data set from Twitter during a two-week time window following the "trigger" event---the murder of Drummer Lee Rigby in Woolwich, London, UK on May 22, 2013. To ensure we maximized the collection of data surrounding the event we used the search term "woolwich," which would include many references to the events at Woolwich and also the main hashtag surrounding the event "#woolwich."
+
+The two-week data collection window was imposed based on three factors. First, existing research indicates that public interest in events typically spikes a short time after the event, and then rapidly declines (Downs, 1972).
+
+They annotated 2000 tweets using Crowdsourcing, in terms of race, ethnicity or religious hate or not --\> They used several annotators for each tweet and then deleted those with less than 75% of agreement.
+
+#### Feature selection
+
+Using the words of the text to be classified, known as a BoW technique, is not a particularly novel approach to text classification, but the frequency of particular unigram (single word) and bigram (two word) terms were overwhelming and needed to be utilized.
+
+Of more interest from a sociological and common sense reasoning perspective were the numerous instances in the cyber hate sample of calls for collective action and hateful incitement toward social groups exhibiting protected characteristics. For instance, there were exclamations such as "send them home," "get them out," and "should be hung." These exclamations clearly follow a pattern that could be encoded in parts-of-speech notation [e.g., Verb, Pronoun, Noun; Verb, Pronoun, Adverb; Verb, Verb, Verb(PT)]. However, the benign sample also displayed an abundance of similar patterns, such as "leave them alone," or "they are peaceful." Thus, parts-of-speech tagging to produce features to inform the machine classifier was avoided, as it seemed highly likely to cause confusion between the classes. Instead, we implemented the Stanford Lexical Parser, along with a context-free lexical parsing model, to extract typed dependencies within the tweet text (Marneffe et al., 2006). Typed dependencies provide a representation of syntactic grammatical relationships in a sentence (or tweet in this case) that can be used as features for classification. The following example explains the meaning of such relationships and how they can be used as features to inform the machine classifier.
+
+Consider the sentence:
+
+"Totally fed up with the way this country has turned into a haven for terrorists. Send them all back home."
+
+The typed dependency parser returns the following output:
+
+[root(ROOT-0, Send-1), nsubj(home-5, them-2), det(home-5, all-3), amod- (home-5, back-4), xcomp(Send-1, home-5)]
+
+Within the output we can see five instances of typed dependencies. The second instance (nsubj(home-5, them-2)) identifies a relationship between "home" and "them," with "home" being the fifth word in the sentence and "them" appearing before "home" as the second word. Word order within a sentence is preserved in the type dependency and provides a feature for classification as well as the syntactic relationship between words. The relationship identified by the parser in this case is nsubj, which is an abbreviation of nominal subject. This will include a noun phrase ("them"), which is the syntactic subject in the sentence, and an associated relational term ("home"). Linguistically therefore, the term "them" is associated with "home" in a relational sense. Sociologically, this is an "othering" phrase, which essentially distances "them" from "us" through the relational action of removing "them" to their "home," as perceived by the author of the tweet.
+
+Similarly, the third typed dependency (det(home-5, all-3)) identifies a det relationship, which is short for determiner, where a link is established between a noun phrase and its determiner. The noun phrase here being "home" (as in a place) and the determiner being "all." Again, this falls into an "othering" behavior, suggesting that the entire social group to which the Woolwich perpetrators belonged should have a relationship with "home," which we can assume means the perceived "home" of the social group by the author of the tweet (i.e., "not my country"). This combination of linguistics and sociology potentially provides a very interesting set of features for the more nuanced classification of cyber hate, beyond the BoW approach that utilizes expletives and derogatory terms. It allows a more common-sense reasoning approach to classifying cyber hate by considering the integration of "othering" terms and calls for retribution action into the classification features.
+
+#### Data preprocessing and Feature Preparation
+
+Each tweet was computationally transformed into a word vector---a list of all the individual words (tokens) in the tweet. All tokens we transformed to lowercase to avoid capitalized versions of words being treated as separate features to lower case versions of the same word. Non alphanumeric characters other than those present in emoticons and exclamatory punctuation were removed, stop words were removed, and we stemmed each token to ensure that multiple representations and tenses of a word could be considered as a single features; for example, "attacked," "attackers," and "attacking" can all be reduced to "attack" so the machine can consider the verb as a single predictive feature, as well as the various forms of the verb. Tokens within each tweet were then clustered into sequential groups of tokens, or n-grams, ranging from one to five tokens in length to preserve an element of context for each word by encapsulating their surrounding words within a feature. Single tokens, or unigrams, were prominent in the cyber hate sample in the form of expletives or derogatory terms. Two-token combinations, or bigrams, were also present in the form of combinations of expletives, adjectives, and derogatory terms. Three-token terms (trigrams) could represent "othering" and incitements of retributional action, such as "send them home" or "get them out." Four- and five-token terms contained extended but similar phrases.
+
+To produce a more sophisticated classifier, capable of learning the grammatical structure of tweets containing hate, each tweet was transformed to a set of dependencies using the Stanford Parser.
+
+As with the BoW experiments, at the classification stage we performed a twostep approach. The first experiment involved testing the classifier using all typed dependencies as features. We then performed a meta-analysis to better determine which features were more statistically significant at classifying cyber hate. To achieve this we ran a Bayesian Logistic Regression (BLR) using the typed dependency features extracted from the 10 percent sample of gold standard cyber hate and benign tweets.
+
+### Model selection
+
+Each tweet was transformed into a feature vector---a list of attributes that represent the tweet for the purposes of training a classifier. Each vector included the actual class the tweet belonged to based on the human annotation exercises (reduced to a binary "Yes" or "No" as to whether it was hateful or antagonistic or not), and a list of ngrams that either included words, typed dependencies, or a combination of both, depending on the feature set used to train the classifier.
+
+![](images/Captura%20de%20pantalla%202023-04-10%20135523.png)
+
+Once a supervised machine learning classifier has been developed it can be used on a larger sample to classify new and unseen data, and inform policy decisions directly or via additional models.
+
+One way to measure the impact of cyber hate on the spread of information on Twitter is to treat cyber hate as a predictive feature in a statistical regression model where the dependent variable (the outcome you are trying to predict) is the number of retweets a tweet is likely to receive. Theoretically, the more retweets a tweet receives, the more people are likely to see it, increasing the risk of public exposure and opportunity to propagate and respond to cyber hate. By measuring the statistical associated strength of cyber hate within a model of retweet counts, we can determine the likelihood of hateful and antagonistic content being retweeted, and therefore spreading to a large number of people. We can define a tweet that has been retweeted a large number of times as an information flow (Lotan, 2011).
+
+Table 5 shows the result of a zero-inflated negative binomial model of information flow "size." The dependent variable is a count measure of the number of retweets a tweet actually received following the Woolwich event. The statistical predictors of the count include the number of followers of the person sending the tweet, the time of day the tweet was sent, the content of the tweet (hashtags, URLs), the sentiment polarity (+ve, --ve), the number of press headlines on the day the tweet was made, and the type of agent sending the tweet (e.g., press, police, politician).
+
+# 8. Detecting and monitoring Hate Speech in Twitter
+
+The authors introduce a system that monitors and visualizes hate speech in Social Media, introducing a novel dataset of 6000 expert-labeled tweets, comparing different approaches, strategies and text classification models. They develop 'HaterNet', the result of all these operations, in collaboration with the Spanish Secretariat for Security of the Ministry of Interior, and more concretely the Spanish National Office Against Hate Crimes.
+
+So, the work is made of two modules:
+
+1.  Hate Speech Detection
+2.  Social Network Analyzer
+
+### State of the art
+
+To date, there are three different approaches to complete this task:
+
+• Lexicon-based [40,42], which uses a predefined lexicon to check the occurrence of words in therevised text.
+
+• ML-based [39,43], which uses language model classifiers, being linear regression the mostcommon [39].
+
+• Deep learning techniques [43], which learn complex features using deep neural networks.
+
+The first two approaches are known as surface forms, as they use lexical and syntactical
+
+information to search for text patterns, whereas the third approach relies on semantic aspects.
+
+These models make use of approaches, such as Bag Of Words (BOW), n-grams, or Part-of-Speech tagging (POS), and have worked remarkably well for many NLP problems [23,44]. However, they are not capable of explaining the word semantics. Methods based on word embeddings make possible to come close to this objective. Their goal is to represent terms in a high dimensional space, while preserving their semantic relationships. There are different models that create word embeddings, word2vec [45] being the most popular.
+
+Word2vec uses self-supervised learning, and its rationale is that the semantics of a term depend on the neighbors of such term. The length of the generated word embedding depends on the number of neurons in the hidden layer.
+
+Thus, in this paper, the approach followed by Quijano-Sánchez et al. [23] is taken as gold standard. Our research improves on it by considering more document representations and more complex models. Work Araque et al. [43] comes closest to the present research by using ensemble techniques that combine both deep learning approaches and traditional surface methods.
+
+Davidson et al. [7] (Code available at [https://github.com/t-davidson/hate-speech-and-offensive-language)](https://github.com/t-davidson/hate-speech-and-offensive-language)) introduced a novel dataset comprised of almost 25,000 tweets labeled using crowdsourcing. The authors characterized the messages through features based on words and other aspects of the tweet, such as readability, sentiment, hastags, mentions, retweets, and URLs. These features were used to train classical machine learning models (i.e., Logistic Regression (LR), Naïve Bayes (NB), Decision Trees (DT), Random Forests (RF), and linear SVMs). The authors, that found that LR and Linear SVM performed significantly better than other models.
+
+![](images/Captura%20de%20pantalla%202023-04-11%20172750.png)
+
+![](images/Captura%20de%20pantalla%202023-04-11%20172911.png)
+
+### Hate Speech Detection: Design and Theoretical Concepts
+
+1.  Corpus Collection and Cleaning: Tweets downloading and cleaning --\> lower case, uncommon characters, symbols...
+2.  Document Selection: The number of tweets containing hate speech in a given period of time is very low, usually less than 1%. This fact poses two difficulties that must be addressed: (1) imbalanced classes and (2) manually tagging a relevant dataset. Thus, to obtain a representative and balanced training dataset that can be tagged by experts, it is necessary to previously filter the initial two million downloaded tweets. Note that, at the end of this stage, the training set becomes more balanced than the raw corpus.
+3.  Document Labeling: The filtered tweets are manually classified to produce both training and test sets. In HaterNet, this task is executed by four different raters.
+4.  Document Representation and Feature Extraction: Prior to classifying, tweets are processed to generate representative features that can be then provided as inputs to the classification models. Initially, an NLP preprocessing pipeline [58] is followed: lowercasing, tokenization, POS tagging, lemmatization, and stopword removal for the obtention of unigrams. Although tokenization and stopword removal are standard prior steps for normalizing texts, lower-casing and lemmatization are aimed at reducing sparsity and vocabulary size, steps which have been proved beneficial in text classification tasks. A new feature representing word suffixes is included. Suffixes in Spanish tend to be useful in tweet representation because they add different inflections and meanings to a word. As an example, the suffix "-ucho" is used for obtaining new nouns and adjectives that are usually derogatory: the word "hotel" has the same meaning as in English, whereas "hotelucho" means "fleabag hotel".
+
+![](images/Captura%20de%20pantalla%202023-04-11%20173848.png)
+
+5.  Feature Selection: Feature selection and dimensionality reduction are key parts in text classification problems, as having too many features might hamper generalization and could result in overfitting [62]. LASO could be an option.
+6.  Document Classification: LR, RF, SVM, LDA, QDA, NN...
+
+### Implementation
+
+#### 1. Tweet Collection and Cleaning
+
+Emojis --\> Converted to text (:smiling)
+
+URL --\> Converted to TOKENURL
+
+Etc
+
+This is useful, for example, when hate tweets contain angry faces or laughs, because the model can capture them.
+
+#### 2. Tweet Selection
+
+As motivated in Section 3.2, it is necessary to apply a filter to the corpus of two million tweets prior the manual labeling process. The filter (sketched in Figure 4) is designed as a two-step process that makes use of seven files. Six of them are dictionaries of words that represent different types of hate speech (i.e., ethnicity, race, gender, disability, politics, and religion), whereas the last one contains generic insults.
+
+The filter described has been designed to focus explicitly on the type of hate speech considered in this study (see Section 1). Therefore, the bias introduced by the generic insult vocabulary ensures that the content of the tweet might be civilly or criminally punishable. Note that, after applying the filter, only 8710 tweets out of the original 2 m in the raw corpus were selected for labeling.
+
+#### 4. Tweet representation
+
+At this point an NLP preprocessing pipeline is followed: lemmatization, stopword removal, and POS tagging. Therefore, at the end of this stage, each tweet is represented as a vector of unigrams, i.e., words, emojis, POs tags, or tokens.
+
+With respect to suffixes detection, we have developed an ad hoc algorithm, as there is no library for detecting suffixes in Spanish. In particular, a word contains a suffix if it ends with one of the suffixes contained in the last appendix of the Dictionary of the Royal Spanish Academy [73]. Identified suffixes are also added to the vector tweet representation.
+
+##### 4.1. Frequency-based representation
+
+When using the frequency-based representation, each tweet i is represented by a vector vi that includes four frequencies (i.e., absolute, binary, logarithm, and ratio) for each unigram considered (i.e., words, POS tags, emojis, suffixes, and expression tokens), plus four more elements for the number of words, lemmata (total and unique), and sentences in the tweet.
+
+##### 4.2. Embeddings-based representation
+
+This second representation is based on natural language semantics, where the semantic of each term in the tweets is obtained using a word2vec model. Unigram embeddings are obtained using the Gensim Python library for NLP. The neural network for the embeddings is trained using the unfiltered and unlabeled 2M tweets corpus. This allows taking advantage of all the semantic information of the whole corpus, which poses an improvement, as the method recognizes more vocabulary.
+
+#### 5. Feature selection
+
+The step of feature selection is applied only when using the frequency-based representation. Initially, a filter is applied on the absolute frequencies to remove vector elements with high sparsity (i.e., less that 1% non-zeroes) or very low sparsity and variability (i.e., more than 99% non-zeroes and very low coefficient of variation). This allows disregarding vector elements that could only be used to discriminate a tiny fraction of the documents and that, therefore, could lead to overfitting. After this filter, only 1.65% of the initial vector elements are preserved.
+
+Next, a LASSO algorithm using a logistic regression model with L1 penalization is applied. Leave-one-out cross-validation is used to choose the best penalization parameter and, consequently, the final set of features. After this step, the number of selected features is 148.
+
+#### 6. Classification
+
+For Frequency-Based: LDA, QDA, RF, LR, SVM.
+
+For Embeddings-Based: LSTM Neural Network.
+
+### Results
+
+![](images/Captura%20de%20pantalla%202023-04-12%20124726.png)
+
+Then, they perform Social Network Analysis and see what are the most common terms in Hate Tweets, the mentions between users who spread hate, terms neighbourhoods...
+
+### Process
+
+![](images/Captura%20de%20pantalla%202023-04-12%20124920.png)
+
+They achieve a AUC of 0.828.
