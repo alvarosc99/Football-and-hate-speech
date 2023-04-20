@@ -12,7 +12,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(data.table)
 library(tidyverse)
-library(openxlsx)
 library(bit64)
 ```
 # Tweets
@@ -168,4 +167,42 @@ write.table(sampletext, file = "sample.txt", row.names = FALSE)
 
 ```
 
+```{r}
+SEF <- as.data.frame(data.table::fread("data/SEFutbol_sample.csv.gz"))
+
+SEF <- SEF %>% 
+  select(created_at, text)
+
+filtered_df <- filter(SEF, grepl("negro", text))
+```
+
+```{r}
+data1 <- as.data.frame(data.table::fread("data/lang/football_mentions_players.csv.gz"))
+data2 <- as.data.frame(data.table::fread("data/lang/football_mentions_teams.csv.gz"))
+data3 <- as.data.frame(data.table::fread("data/lang/football_players_cr.csv.gz"))
+data4 <- as.data.frame(data.table::fread("data/lang/football_players_de.csv.gz"))
+data5 <- as.data.frame(data.table::fread("data/lang/football_players_es.csv.gz"))
+data6 <- as.data.frame(data.table::fread("data/lang/football_players_jp.csv.gz"))
+data7 <- as.data.frame(data.table::fread("data/lang/football_players_ma.csv.gz"))
+data8 <- as.data.frame(data.table::fread("data/lang/football_teams.csv.gz"))
+
+tweets2 <- bind_rows(data1, data2, data3, data4, data5, data6, data7, data8)
+
+tweetstotal <- bind_rows(tweets, tweets2, SEF)
+```
+
+Selecting only desired columns: 
+
+```{r}
+tweetstotal <- tweetstotal %>% 
+  select(c(id, author_id, created_at, text, lang, entities.hashtags, entities.mentions, entities.urls))
+```
+
+
+Export all tweets: 
+```{r}
+
+write.csv(tweetstotal, file = "data/tweets.csv", row.names = FALSE)
+
+```
 

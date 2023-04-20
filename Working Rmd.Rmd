@@ -1,0 +1,88 @@
+---
+title: "Working Rmd"
+author: '100385774'
+date: "2023-04-18"
+output: html_document
+---
+
+# 0. LOADING THE DATA
+
+Data has been previously compiled into a single .csv document in the 'Preliminar.Rmd' file. 
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(stringr)
+```
+
+
+```{r}
+df <- read.csv("data/tweets.csv")
+```
+
+# 1. DATA PREPROCESSING
+
+Duplicates removal: 
+
+```{r}
+df <- df %>% 
+  distinct()
+```
+
+Spanish filtering: 
+
+```{r}
+df <- df %>% 
+  filter(lang == "es")
+```
+
+*APPLY LATER CLD3 PACKAGE
+
+## (Sampling for manual annotation)
+
+1. Filtering search: "moro", "negro", "maricon", "vete a tu pais", "chino",  
+
+```{r}
+set.seed(123)
+
+annotation_1 <- df %>% 
+  filter(str_detect(df$text, "moro")) %>% 
+   sample_n(500, replace = FALSE)
+
+annotation_2 <- df %>% 
+  filter(str_detect(df$text, "negro|mono")) %>% 
+   sample_n(500, replace = FALSE)
+
+annotation_3 <- df %>% 
+  filter(str_detect(df$text, "chino|sudaca|panchito|gitano")) %>% 
+   sample_n(500, replace = FALSE)
+
+annotation_4 <- df %>% 
+  filter(str_detect(df$text, "maricon|maricón|travelo|transexual|travesti")) %>% 
+   sample_n(500, replace = FALSE)
+
+annotation_5 <- df %>% 
+  filter(str_detect(df$text, "a tu pais|a tu país|a su pais|a su país")) %>% 
+   sample_n(500, replace = FALSE)
+
+annotation_6 <- df %>% 
+  filter(str_detect(df$text, "puta|zorra|a la cocina|chupapollas")) %>% 
+   sample_n(500, replace = FALSE)
+
+#annotation_x <- df %>% 
+  #filter(str_detect(df$text, "moro|negro|maricon|maricón|a tu pais|a tu país|a su pais|a su país|chino|mono|sudaca|panchito"))
+
+annotation_random <- df %>% 
+             sample_n(1000, replace = FALSE)
+```
+
+```{r}
+
+annotation <- bind_rows(annotation_1, annotation_2, annotation_3, annotation_4, annotation_5, annotation_6, annotation_random) %>% 
+  distinct() %>% 
+  mutate(hate = 0)
+
+write_excel_csv(annotation, file = "annotation.csv")
+
+``
+
