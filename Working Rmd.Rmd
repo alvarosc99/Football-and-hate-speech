@@ -13,6 +13,7 @@ Data has been previously compiled into a single .csv document in the 'Preliminar
 library(tidyverse)
 library(ggplot2)
 library(stringr)
+library(openxlsx)
 ```
 
 
@@ -80,9 +81,10 @@ annotation_random <- df %>%
 
 annotation <- bind_rows(annotation_1, annotation_2, annotation_3, annotation_4, annotation_5, annotation_6, annotation_random) %>% 
   distinct() %>% 
-  mutate(hate = 0)
+  mutate(hate = 0) %>% 
+  select(c(text, hate))
 
-write_excel_csv(annotation, file = "annotation.csv")
+write.xlsx(annotation, file = "annotation.xlsx")
 
-``
+```
 
