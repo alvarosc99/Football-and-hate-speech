@@ -14,6 +14,8 @@ library(tidyverse)
 library(ggplot2)
 library(stringr)
 library(openxlsx)
+library(lubridate)
+library(emo)
 ```
 
 
@@ -21,27 +23,19 @@ library(openxlsx)
 df <- read.csv("data/tweets.csv")
 ```
 
-# 1. DATA PREPROCESSING
+# 1. MANUAL ANNOTATION
 
-Duplicates removal: 
-
-```{r}
-df <- df %>% 
-  distinct()
-```
-
-Spanish filtering: 
+Duplicates removal, Spanish filtering: 
 
 ```{r}
 df <- df %>% 
-  filter(lang == "es")
+  distinct() %>% 
+  filter(lang == "es") 
 ```
 
-*APPLY LATER CLD3 PACKAGE
+## Manual annotations
 
-## (Sampling for manual annotation)
-
-1. Filtering search: "moro", "negro", "maricon", "vete a tu pais", "chino",  
+Filtering search for hate terms + random sampling.   
 
 ```{r}
 set.seed(123)
@@ -70,11 +64,8 @@ annotation_6 <- df %>%
   filter(str_detect(df$text, "puta|zorra|a la cocina|chupapollas")) %>% 
    sample_n(500, replace = FALSE)
 
-#annotation_x <- df %>% 
-  #filter(str_detect(df$text, "moro|negro|maricon|maricón|a tu pais|a tu país|a su pais|a su país|chino|mono|sudaca|panchito"))
-
 annotation_random <- df %>% 
-             sample_n(1000, replace = FALSE)
+             sample_n(2000, replace = FALSE)
 ```
 
 ```{r}
@@ -82,9 +73,63 @@ annotation_random <- df %>%
 annotation <- bind_rows(annotation_1, annotation_2, annotation_3, annotation_4, annotation_5, annotation_6, annotation_random) %>% 
   distinct() %>% 
   mutate(hate = 0) %>% 
-  select(c(text, hate))
+  select(c(text, hate, id))
 
-write.xlsx(annotation, file = "annotation.xlsx")
+write.xlsx(annotation, file = "annotationbis.xlsx")
 
 ```
+
+Loading the annotated tweets as training data: 
+
+```{r}
+
+annotation_a <- read.xlsx("data/annotationbis.xlsx")
+
+annotation_b <- read.delim("data/HaterNet.txt", sep = ";", col.names = c("id", "X1", "text", "X2", "hate")) %>% 
+  select(-c(X1, X2))
+
+annotation_c <- read.delim("data/hateval/hateval2019_es_train.csv", sep = ",") %>% 
+  select(-c(TR, AG)) %>% 
+  rename(hate = HS) 
+
+```
+
+# 2. DATA PREPROCESSING: 
+
+*APPLY LATER CLD3 PACKAGE
+
+Noise removal (bots), Boolean mention and URL presence, lower casing, time conversion: 
+
+```{r}
+df <- df %>% 
+  select(-c(lang, entities.hashtags)) %>% 
+  distinct(text, author_id, .keep_all = TRUE) %>% 
+  mutate(entities.mentions = ifelse(entities.mentions == "", F, T),
+         entities.urls = ifelse(entities.urls == "", F, T),
+         text = tolower(text), 
+         created_at = as.POSIXct(created_at))
+```
+
+Emojis tokenization: 
+
+```{r}
+df <- df %>% 
+  mutate(text = str_replace_all(text, "🏻|🏼|🏽|🏾|🏿", ""),
+         text = str_replace_all(text, "\\\\n|&lt", " "), 
+         text = str_replace_all(text, "🤣+|😂+", ":risa:"),
+         text = str_replace_all(text, "🐀+", ":rata:"),
+         text = str_replace_all(text, "😡+|🔪+|🤬+|👊+|🪓+|🤮+|💩+", ":enfado:"),
+         text = str_replace_all(text, "👏+|💪+|✊+|💪+|❤️+|🥰+|❤+|🤍+", ":positividad:"),
+         text = ji_replace_all(text, ""),
+         text = iconv(text, to = "UTF-8//IGNORE"))
+
+```
+
+Laughs tokenization: 
+
+```{r}
+df %>% 
+  mutate(text = str_replace_all(text, "jajaja.*\\.?\\s?|jsjsjs.*\\.?\\s?|jajaj.*\\.?\\s?|jsjsj.*\\.?\\s?|j{1,}a{1,}s{1,}?j{1,}a{1,}s{1,}?.*\\.?\\s?", ":risa: "))
+```
+
 
