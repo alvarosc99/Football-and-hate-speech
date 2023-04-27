@@ -5,25 +5,27 @@ date: "2023-04-18"
 output: html_document
 ---
 
-# 0. LOADING THE DATA
+# 0. Loading the data
 
 Data has been previously compiled into a single .csv document in the 'Preliminar.Rmd' file. 
 
 ```{r}
 library(tidyverse)
+library(data.table)
 library(ggplot2)
 library(stringr)
 library(openxlsx)
 library(lubridate)
 library(emo)
+library(stopwords)
 ```
 
 
 ```{r}
-df <- read.csv("data/tweets.csv")
+df <- fread("data/tweets.csv")
 ```
 
-# 1. MANUAL ANNOTATION
+# 1. Manual annotation
 
 Duplicates removal, Spanish filtering: 
 
@@ -79,22 +81,7 @@ write.xlsx(annotation, file = "annotationbis.xlsx")
 
 ```
 
-Loading the annotated tweets as training data: 
-
-```{r}
-
-annotation_a <- read.xlsx("data/annotationbis.xlsx")
-
-annotation_b <- read.delim("data/HaterNet.txt", sep = ";", col.names = c("id", "X1", "text", "X2", "hate")) %>% 
-  select(-c(X1, X2))
-
-annotation_c <- read.delim("data/hateval/hateval2019_es_train.csv", sep = ",") %>% 
-  select(-c(TR, AG)) %>% 
-  rename(hate = HS) 
-
-```
-
-# 2. DATA PREPROCESSING: 
+# 2. Data Preprocessing and NLP Techniques: 
 
 *APPLY LATER CLD3 PACKAGE
 
@@ -106,6 +93,8 @@ df <- df %>%
   distinct(text, author_id, .keep_all = TRUE) %>% 
   mutate(entities.mentions = ifelse(entities.mentions == "", F, T),
          entities.urls = ifelse(entities.urls == "", F, T),
+         text = str_remove_all(text, "@.{1,15} "),
+         text = str_remove_all(text, "https://.*\\b"),
          text = tolower(text), 
          created_at = as.POSIXct(created_at))
 ```
@@ -121,15 +110,10 @@ df <- df %>%
          text = str_replace_all(text, "😡+|🔪+|🤬+|👊+|🪓+|🤮+|💩+", ":enfado:"),
          text = str_replace_all(text, "👏+|💪+|✊+|💪+|❤️+|🥰+|❤+|🤍+", ":positividad:"),
          text = ji_replace_all(text, ""),
-         text = iconv(text, to = "UTF-8//IGNORE"))
+         text = iconv(text, to = "UTF-8//IGNORE"),
+         text = str_replace_all(text, "jajaja.*\\.?\\s?|jsjsjs.*\\.?\\s?|jajaj.*\\.?\\s?|jsjsj.*\\.?\\s?|j{1,}a{1,}s{1,}?j{1,}a{1,}s{1,}?.*\\.?\\s?", ":risa: "))
 
 ```
 
-Laughs tokenization: 
-
-```{r}
-df %>% 
-  mutate(text = str_replace_all(text, "jajaja.*\\.?\\s?|jsjsjs.*\\.?\\s?|jajaj.*\\.?\\s?|jsjsj.*\\.?\\s?|j{1,}a{1,}s{1,}?j{1,}a{1,}s{1,}?.*\\.?\\s?", ":risa: "))
-```
 
 
