@@ -20,6 +20,7 @@ library(emo)
 library(stopwords)
 library(tidytext)
 library(fastmatch)
+library(Matrix)
 ```
 
 ```{r}
@@ -36,7 +37,7 @@ annotation_c <- read.delim("data/hateval/hateval2019_es_train.csv", sep = ",") %
 ```
 
 
-Noise removal (bots), Boolean mention and URL presence, lower casing, time conversion: 
+Noise removal (bots), Boolean mention and URL presence, Boolean terms presence, lower casing, time conversion: 
 
 ```{r}
 df <- df %>% 
@@ -45,49 +46,67 @@ df <- df %>%
          entities.mentions = ifelse(str_detect(text, "@.{1,15} "), T, F),
          entities.url = ifelse(str_detect(text, "https://.*\\b"), T, F),
          text = str_remove_all(text, "@.{1,15} "),
-         text = str_remove_all(text, "https://.*\\b"))
+         text = str_remove_all(text, "https://.*\\b"),
+         hateterm = str_detect(text, "(?:^|\\s)moros?\\b|(?:^|\\s)maric[oó]na?e?s?\\b|(?:^|\\s)monos?\\b|(?:^|\\s)putas?\\b|(?:^|\\s)hijos? de puta\\b|(?:^|\\s)hijos?deputa|(?:^|\\s)zorras?\\b|(?:^|\\s)panchitos?\\b"))
 
 ```
 
 Emojis and laughs tokenization: 
+https://regex101.com/r/UbZ90u/1
 
 ```{r}
 df <- df %>% 
   mutate(text = str_replace_all(text, "🏻|🏼|🏽|🏾|🏿", ""),
          text = str_replace_all(text, "\\\\n|&lt", " "), 
-         text = str_replace_all(text, "🤣+|😂+", ":risa:"),
-         text = str_replace_all(text, "🐀+", ":rata:"),
-         text = str_replace_all(text, "😡+|🔪+|🤬+|👊+|🪓+|🤮+|💩+", ":enfado:"),
-         text = str_replace_all(text, "👏+|💪+|✊+|💪+|❤️+|🥰+|❤+|🤍+", ":positividad:"),
+         text = str_replace_all(text, "🤣+|😂+", " tokenrisa "),
+         text = str_replace_all(text, "🐀+", " tokenrata "),
+         text = str_replace_all(text, "😡+|🔪+|🤬+|👊+|🪓+|🤮+|💩+", " tokenenfado "),
+         text = str_replace_all(text, "👏+|💪+|✊+|💪+|❤️+|🥰+|❤+|🤍+", " tokenpositivo "),
          text = ji_replace_all(text, ""),
          text = iconv(text, to = "UTF-8//IGNORE"),
-         text = str_replace_all(text, "jajaja.*\\.?\\s?|jsjsjs.*\\.?\\s?|jajaj.*\\.?\\s?|jsjsj.*\\.?\\s?|j{1,}a{1,}s{1,}?j{1,}a{1,}s{1,}?.*\\.?\\s?", ":risa: "))
+         text = str_replace_all(text, "\\b(?:a*(?:ha*){2,}h?)\\b|\\b(?:a*(?:ja*)+j?)\\b|\\b(?:e*(?:je*)+j?)\\b|\\b(?:i*(?:ji+)+j?)\\b|\\b(?:A*(?:JA+)+J?)\\b|\\b(?:A*(?:HA+)+H?)\\b|\\b(?:e*(?:he+){2,}h?)\\b|\\b(?:Ja*(?:ja+)+j?)\\b|\\b(?:Je*(?:je+)+j?)\\b|\\bJa+\\b|\\b(?:Ji*(?:ji+)+j?)\\b|\\b(?:Ha*(?:ha+)+h?)\\b|\\b(?:Jo*(?:jo+)+j?)\\b|\\b(?:o*(?:jo+)+j?)\\b|\\b(?:a*((?:ja+)|(?:js+))+j?)\\b|\\b(?:A*((?:JA+)|(?:JS+))+J?)\\b|\\blo*l\\b", ":risa:"))
 
 ```
 
-
-Tokenizing: 
+Tokenizing and misspellings correction: 
 
 ```{r}
-
 tidy_df <- df %>% 
   unnest_tokens(word, text)
 
+tidy_df$word <- str_replace_all(tidy_df$word, "(?:^|\\s)q\\b", "que")
+tidy_df$word <- str_replace_all(tidy_df$word, "(?:^|\\s)xq\\b", "porque")
+tidy_df$word <- str_replace_all(tidy_df$word, "(?:^|\\s)xk\\b", "porque")
+tidy_df$word <- str_replace_all(tidy_df$word, "(?:^|\\s)k\\b", "que")
+
 ```
 
-Stopwords removal and lemmatization: 
+Stopwords removal and lemmatization:
 
 ```{r}
 lemmas <- fread("Lemmatizer/200918/spdictionary.csv")
+lemmas <- lemmas[-which(word=="moro"),]
 
 stop <- as.tibble(stopwords("es", source = "nltk")) %>% 
-  rename(word = value)
+  rename(word = value) 
+stop <- stop[!(stop$word %in% c("sin", "no", "contra", "poco", "pero")), ]
 
-tidy_df %>% 
+tidy_df <- tidy_df %>% 
   anti_join(stop)
 
 tidy_df$word <- ifelse(is.na(match(tidy_df$word, lemmas$word)), tidy_df$word, lemmas$canonical[match(tidy_df$word, lemmas$word)])
   
+```
+
+```{r}
+
+tidy_df %>% 
+  count(id, word, sort = T) %>% 
+  bind_tf_idf(word, id, n) 
+```
+```{r}
+dtm <- tidy_df %>%
+  cast_sparse(id, word, tf_idf)
 ```
 
 
