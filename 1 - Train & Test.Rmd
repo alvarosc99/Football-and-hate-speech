@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r warning=FALSE}
 library(tidyverse)
 library(data.table)
 library(ggplot2)
@@ -19,8 +19,11 @@ library(lubridate)
 library(emo)
 library(stopwords)
 library(tidytext)
-library(fastmatch)
-library(Matrix)
+library(textrecipes)
+library(SnowballC)
+library(rsample)
+library(workflows)
+library(discrim)
 ```
 
 ```{r}
@@ -81,38 +84,64 @@ tidy_df$word <- str_replace_all(tidy_df$word, "(?:^|\\s)k\\b", "que")
 
 ```
 
-Stopwords removal and lemmatization:
+Stopwords removal and stemming:
 
 ```{r}
-lemmas <- fread("Lemmatizer/200918/spdictionary.csv")
-lemmas <- lemmas[-which(word=="moro"),]
+#lemmas <- fread("Lemmatizer/200918/spdictionary.csv")
+#lemmas <- lemmas[-which(word=="moro"),]
 
 stop <- as.tibble(stopwords("es", source = "nltk")) %>% 
   rename(word = value) 
 stop <- stop[!(stop$word %in% c("sin", "no", "contra", "poco", "pero")), ]
 
 tidy_df <- tidy_df %>% 
-  anti_join(stop)
+  anti_join(stop) %>% 
+  mutate(word = wordStem(word, language = "spanish"))
 
-tidy_df$word <- ifelse(is.na(match(tidy_df$word, lemmas$word)), tidy_df$word, lemmas$canonical[match(tidy_df$word, lemmas$word)])
+#tidy_df$word <- ifelse(is.na(match(tidy_df$word, lemmas$word)), tidy_df$word, lemmas$canonical[match(tidy_df$word, lemmas$word)])
   
 ```
 
+
+## Building the model
+
+Train and test partitions: 
+
 ```{r}
+hate_split <- initial_split(df, strata = hate)
 
-tidy_df %>% 
-  count(id, word, sort = T) %>% 
-  bind_tf_idf(word, id, n) 
+hate_train <- training(hate_split)
+hate_test <- testing(hate_split)
+
+dim(hate_train)
 ```
+
 ```{r}
-dtm <- tidy_df %>%
-  cast_sparse(id, word, tf_idf)
+hate_rec <- recipe(hate ~ text, data = hate_train)
 ```
 
+```{r}
+hate_rec <- hate_rec %>% 
+  step_tokenize(text) %>% 
+  step_stopwords(text, language = "es", keep = F) %>% 
+  step_stem(text, options = list(language = "es")) %>% 
+  step_tfidf(text)
 
+hate_wf <- workflow() %>% 
+  add_recipe(hate_rec)
+```
 
+```{r}
+nb_spec <- naive_Bayes() %>% 
+  set_mode("classification") %>% 
+  set_engine("naivebayes")
+```
 
-
+```{r}
+nb_fit <- hate_wf %>% 
+  add_model(nb_spec) %>% 
+  fit(data = hate_train)
+```
 
 
 
