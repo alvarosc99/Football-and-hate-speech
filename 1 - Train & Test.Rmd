@@ -19,16 +19,23 @@ library(lubridate)
 library(emo)
 library(stopwords)
 library(tidytext)
+library(caret)
 library(textrecipes)
 library(SnowballC)
 library(rsample)
 library(workflows)
 library(discrim)
+library(tidymodels)
 ```
 
 ```{r}
 
 df <- read.xlsx("data/annotationbis.xlsx")
+df <- df %>% mutate(
+  hate = case_when(hate == 0 ~ "No", 
+                   hate == 1 ~ "Yes"),
+  hate = factor(hate, levels = c("No", "Yes"))
+)
 
 annotation_b <- read.delim("data/HaterNet.txt", sep = ";", col.names = c("id", "X1", "text", "X2", "hate")) %>% 
   select(-c(X1, X2))
@@ -46,8 +53,8 @@ Noise removal (bots), Boolean mention and URL presence, Boolean terms presence, 
 df <- df %>% 
   distinct(text, .keep_all = T) %>% 
   mutate(text = tolower(text),
-         entities.mentions = ifelse(str_detect(text, "@.{1,15} "), T, F),
-         entities.url = ifelse(str_detect(text, "https://.*\\b"), T, F),
+         entities.mentions = ifelse(str_detect(text, "@.{1,15} "), 1, 0),
+         entities.url = ifelse(str_detect(text, "https://.*\\b"), 1, 0),
          text = str_remove_all(text, "@.{1,15} "),
          text = str_remove_all(text, "https://.*\\b"),
          hateterm = str_detect(text, "(?:^|\\s)moros?\\b|(?:^|\\s)maric[oó]na?e?s?\\b|(?:^|\\s)monos?\\b|(?:^|\\s)putas?\\b|(?:^|\\s)hijos? de puta\\b|(?:^|\\s)hijos?deputa|(?:^|\\s)zorras?\\b|(?:^|\\s)panchitos?\\b"))
@@ -71,9 +78,22 @@ df <- df %>%
 
 ```
 
-Tokenizing and misspellings correction: 
+Other features factorize: 
 
 ```{r}
+df <- df %>% 
+  mutate(entities.url = factor(entities.url, levels = c(0,1)),
+         entities.mentions = factor(entities.mentions, levels = c(0,1)),
+         hateterm = case_when(hateterm == F ~ 0, 
+                              hateterm == T ~ 1),
+         hateterm = factor(hateterm, levels = c(0,1)))
+```
+
+
+
+Tokenizing and misspellings correction: 
+
+```{r eval=FALSE, include=FALSE}
 tidy_df <- df %>% 
   unnest_tokens(word, text)
 
@@ -86,7 +106,7 @@ tidy_df$word <- str_replace_all(tidy_df$word, "(?:^|\\s)k\\b", "que")
 
 Stopwords removal and stemming:
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 #lemmas <- fread("Lemmatizer/200918/spdictionary.csv")
 #lemmas <- lemmas[-which(word=="moro"),]
 
@@ -117,7 +137,7 @@ dim(hate_train)
 ```
 
 ```{r}
-hate_rec <- recipe(hate ~ text, data = hate_train)
+hate_rec <- recipe(hate ~ text + entities.mentions + entities.url + hateterm, data = hate_train)
 ```
 
 ```{r}
@@ -143,15 +163,150 @@ nb_fit <- hate_wf %>%
   fit(data = hate_train)
 ```
 
+## Cross-validation
+
+```{r}
+set.seed(123)
+hate_folds <- vfold_cv(hate_train)
+```
+
+```{r}
+hate_wf <- workflow() %>%
+add_recipe(hate_rec) %>%
+add_model(nb_spec)
+```
+
+```{r}
+nb_rs <- fit_resamples(
+hate_wf,
+hate_folds,
+control = control_resamples(save_pred = TRUE)
+)
+```
+
+```{r}
+nb_rs_metrics <- collect_metrics(nb_rs)
+nb_rs_predictions <- collect_predictions(nb_rs)
+
+nb_rs_metrics
+nb_rs_predictions
+```
+
+```{r}
+conf_mat_resampled(nb_rs, tidy = FALSE) %>%
+autoplot(type = "heatmap")
+```
+
+# Logistic regression
+
+```{r}
+hate_wf2 <- workflow() %>% 
+  add_recipe(hate_rec)
+```
+
+```{r}
+glm_spec <- discrim_linear() %>% 
+  set_mode("classification") %>% 
+  set_engine("MASS")
+```
+
+```{r}
+glm_fit <- hate_wf2 %>% 
+  add_model(glm_spec) %>% 
+  fit(data = hate_train)
+```
+
+## Cross-validation
+
+```{r}
+set.seed(123)
+
+hate_wf2 <- workflow() %>%
+add_recipe(hate_rec) %>%
+add_model(glm_spec)
+```
+
+```{r}
+glm_rs <- fit_resamples(
+hate_wf2,
+hate_folds,
+control = control_resamples(save_pred = TRUE)
+)
+```
+
+```{r}
+glm_rs_metrics <- collect_metrics(glm_rs)
+glm_rs_predictions <- collect_predictions(glm_rs)
+
+glm_rs_metrics
+```
+
+```{r}
+conf_mat_resampled(nb_rs, tidy = FALSE) %>%
+autoplot(type = "heatmap")
+```
+
+# Caret
+
+```{r}
+dtm <- tidy_df %>% 
+  count(id, word, sort = T) %>% 
+  bind_tf_idf(word, id, n) %>% 
+  cast_dtm(id, word, tf_idf)
+
+dtm
+```
+
+```{r}
+require(tm)
+dtm <- removeSparseTerms(dtm, sparse = .99)
+dtm
+```
+
+```{r}
+meta <- tibble(id = as.numeric(dimnames(dtm)[[1]])) %>%
+  left_join(df[!duplicated(df$id), ], by = "id")
+```
+
+```{r}
+set.seed(1234)
+trainIndex <- createDataPartition(meta$hate, p = 0.8, list = FALSE, times = 1)
+```
+
+```{r}
+df_train <- dtm[trainIndex, ] %>% as.matrix() %>% as.data.frame()
+df_test <- dtm[-trainIndex, ] %>% as.matrix() %>% as.data.frame()
+
+response_train <- df$hate[trainIndex]
+```
+
+## rf
+
+```{r}
+ctrl <- trainControl(method = "none")
+```
+
+
+```{r}
+rf_mod <- train(x = df_train, 
+                y = as.factor(response_train), 
+                method = "ranger",
+                trControl = ctrl,
+                tuneGrid = data.frame(mtry = floor(sqrt(dim(df_train)[2])),
+                                      splitrule = "gini",
+                                      min.node.size = 1))
+```
+
+
+```{r}
+rf_pred <- predict(rf_mod,
+                   newdata = df_test)
 
 
 
-
-
-
-
-
-
+rf_cm <- confusionMatrix(rf_pred, meta[-trainIndex, ]$hate)
+rf_cm
+```
 
 
 
