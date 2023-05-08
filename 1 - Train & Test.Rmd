@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r warning=FALSE}
+```{r warning=FALSE, include=FALSE}
 library(tidyverse)
 library(data.table)
 library(ggplot2)
@@ -242,7 +242,7 @@ glm_rs_metrics
 ```
 
 ```{r}
-conf_mat_resampled(nb_rs, tidy = FALSE) %>%
+conf_mat_resampled(glm_rs, tidy = FALSE) %>%
 autoplot(type = "heatmap")
 ```
 
@@ -259,7 +259,7 @@ dtm
 
 ```{r}
 require(tm)
-dtm <- removeSparseTerms(dtm, sparse = .99)
+dtm <- removeSparseTerms(dtm, sparse = .995)
 dtm
 ```
 
@@ -294,7 +294,8 @@ rf_mod <- train(x = df_train,
                 trControl = ctrl,
                 tuneGrid = data.frame(mtry = floor(sqrt(dim(df_train)[2])),
                                       splitrule = "gini",
-                                      min.node.size = 1))
+                                      min.node.size = 1),
+                type = "prob")
 ```
 
 
@@ -302,11 +303,127 @@ rf_mod <- train(x = df_train,
 rf_pred <- predict(rf_mod,
                    newdata = df_test)
 
-
-
 rf_cm <- confusionMatrix(rf_pred, meta[-trainIndex, ]$hate)
 rf_cm
 ```
+
+## Quanteda corpus
+
+https://burtmonroe.github.io/TextAsDataCourse/Tutorials/TADA-ClassificationV2.nb.html
+https://tutorials.quanteda.io/basic-operations/workflow/
+
+```{r}
+library(quanteda)
+library(quanteda.textmodels)
+corpus <- corpus(df$text, docvars = data.frame(hate = df$hate, hateterm = df$hateterm))
+summary(corpus)
+```
+
+```{r}
+tidy_df <- df %>% 
+  unnest_tokens(word, text)
+
+tidy_df$word <- str_replace_all(tidy_df$word, "(?:^|\\s)q\\b", "que")
+tidy_df$word <- str_replace_all(tidy_df$word, "(?:^|\\s)xq\\b", "porque")
+tidy_df$word <- str_replace_all(tidy_df$word, "(?:^|\\s)xk\\b", "porque")
+tidy_df$word <- str_replace_all(tidy_df$word, "(?:^|\\s)k\\b", "que")
+
+```
+
+Stopwords removal and stemming:
+
+```{r}
+#lemmas <- fread("Lemmatizer/200918/spdictionary.csv")
+#lemmas <- lemmas[-which(word=="moro"),]
+
+stop <- as.tibble(stopwords("es", source = "nltk")) %>% 
+  rename(word = value) 
+stop <- stop[!(stop$word %in% c("sin", "no", "contra", "poco", "pero")), ]
+
+tidy_df <- tidy_df %>% 
+  anti_join(stop) %>% 
+  mutate(word = wordStem(word, language = "spanish"))
+
+#tidy_df$word <- ifelse(is.na(match(tidy_df$word, lemmas$word)), tidy_df$word, lemmas$canonical[match(tidy_df$word, lemmas$word)])
+  
+```
+
+
+```{r}
+set.seed(1234)
+id_train <- sample(1:4985,4500, replace=F)
+```
+
+```{r}
+docvars(corpus, "id_numeric") <- 1:ndoc(corpus)
+dfmat_train <- corpus_subset(corpus, id_numeric %in% id_train) %>% tokens() %>% dfm() 
+dfmat_test <- corpus_subset(corpus, !(id_numeric %in% id_train)) %>% tokens %>% dfm() 
+```
+
+```{r}
+hatemod.nb <- textmodel_nb(dfmat_train, docvars(dfmat_train, "hate"), distribution = "Bernoulli")
+summary(hatemod.nb)
+```
+
+```{r}
+dfmat_matched <- dfm_match(dfmat_test, features=featnames(dfmat_train))
+```
+
+```{r}
+actual_class <- docvars(dfmat_matched, "hate")
+predicted_class <- predict(hatemod.nb, newdata=dfmat_matched, type = "prob")
+predicted_class <- as.factor(ifelse(predicted_class[,2] > 0.1, "Yes", "No"))
+tab_class <- table(actual_class,predicted_class)
+tab_class
+```
+
+```{r}
+caret::confusionMatrix(tab_class, mode="everything", positive="Yes")
+```
+
+SVM: 
+```{r}
+library(e1071)
+
+sentmod.svm <- svm(x=dfmat_train,
+                   y=as.factor(docvars(dfmat_train)$hate),
+                   kernel="linear", 
+                   cost=10,  # arbitrary regularization cost
+                   probability=TRUE)
+```
+
+```{r}
+
+predicted_class.svm <- predict(sentmod.svm, newdata=dfmat_matched, type = "prob")
+tab_class.svm <- table(actual_class,predicted_class.svm)
+tab_class.svm
+```
+
+```{r}
+confusionMatrix(tab_class.svm, mode="everything", positive="Yes")
+```
+
+RF: 
+
+```{r}
+library(randomForest)
+
+dfmat.rf <- corpus %>%
+  tokens() %>%
+  dfm() %>%
+  dfm_trim(min_docfreq=50,max_docfreq=300,verbose=TRUE)
+
+dfmatrix.rf <- as.matrix(dfmat.rf)
+```
+
+```{r}
+
+```
+
+
+
+
+
 
 
 
