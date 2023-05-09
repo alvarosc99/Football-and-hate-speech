@@ -123,7 +123,9 @@ tidy_df <- tidy_df %>%
 ```
 
 
-## Building the model
+# Building the model
+
+## Tidymodels
 
 Train and test partitions: 
 
@@ -163,7 +165,7 @@ nb_fit <- hate_wf %>%
   fit(data = hate_train)
 ```
 
-## Cross-validation
+Cross-validation:
 
 ```{r}
 set.seed(123)
@@ -197,7 +199,7 @@ conf_mat_resampled(nb_rs, tidy = FALSE) %>%
 autoplot(type = "heatmap")
 ```
 
-# Logistic regression
+Logistic regression:
 
 ```{r}
 hate_wf2 <- workflow() %>% 
@@ -216,7 +218,7 @@ glm_fit <- hate_wf2 %>%
   fit(data = hate_train)
 ```
 
-## Cross-validation
+Cross-validation:
 
 ```{r}
 set.seed(123)
@@ -246,7 +248,7 @@ conf_mat_resampled(glm_rs, tidy = FALSE) %>%
 autoplot(type = "heatmap")
 ```
 
-# Caret
+## Caret (DTM)
 
 ```{r}
 dtm <- tidy_df %>% 
@@ -280,7 +282,7 @@ df_test <- dtm[-trainIndex, ] %>% as.matrix() %>% as.data.frame()
 response_train <- df$hate[trainIndex]
 ```
 
-## rf
+RF:
 
 ```{r}
 ctrl <- trainControl(method = "none")
@@ -307,7 +309,7 @@ rf_cm <- confusionMatrix(rf_pred, meta[-trainIndex, ]$hate)
 rf_cm
 ```
 
-## Quanteda corpus
+## Quanteda corpus (DFM)
 
 https://burtmonroe.github.io/TextAsDataCourse/Tutorials/TADA-ClassificationV2.nb.html
 https://tutorials.quanteda.io/basic-operations/workflow/
@@ -315,7 +317,7 @@ https://tutorials.quanteda.io/basic-operations/workflow/
 ```{r}
 library(quanteda)
 library(quanteda.textmodels)
-corpus <- corpus(df$text, docvars = data.frame(hate = df$hate, hateterm = df$hateterm))
+corpus <- corpus(df$text, docvars = data.frame(hate = df$hate, hateterm = df$hateterm, mentions = df$entities.mentions, url = df$entities.url))
 summary(corpus)
 ```
 
@@ -356,8 +358,14 @@ id_train <- sample(1:4985,4500, replace=F)
 
 ```{r}
 docvars(corpus, "id_numeric") <- 1:ndoc(corpus)
-dfmat_train <- corpus_subset(corpus, id_numeric %in% id_train) %>% tokens() %>% dfm() 
-dfmat_test <- corpus_subset(corpus, !(id_numeric %in% id_train)) %>% tokens %>% dfm() 
+
+dfmat_train <- corpus_subset(corpus, id_numeric %in% id_train) %>% 
+  tokens() %>% 
+  dfm() 
+
+dfmat_test <- corpus_subset(corpus, !(id_numeric %in% id_train)) %>% 
+  tokens() %>% 
+  dfm() 
 ```
 
 ```{r}
@@ -416,15 +424,78 @@ dfmat.rf <- corpus %>%
 dfmatrix.rf <- as.matrix(dfmat.rf)
 ```
 
+# Own try: 
+
 ```{r}
+
+corpus <- corpus(df$text, docvars = data.frame(hate = df$hate, hateterm = df$hateterm, mentions = df$entities.mentions, url = df$entities.url))
+summary(corpus)
 
 ```
 
+```{r}
+set.seed(1234)
+id_train <- sample(1:4985,4500, replace=F)
+```
 
+```{r}
+docvars(corpus, "id_numeric") <- 1:ndoc(corpus)
 
+dfmat_train <- corpus_subset(corpus, id_numeric %in% id_train) %>%  
+  tokens(remove_punct = T, remove_numbers = T, remove_separators = T) %>% 
+  tokens_remove(stopwords("es", source = "nltk")) %>% 
+  tokens_wordstem(language = "spanish") %>% 
+  dfm() %>%
+  dfm_trim(min_docfreq=10,verbose=TRUE)
 
+dfmat_test <- corpus_subset(corpus, !(id_numeric %in% id_train)) %>% 
+  tokens(remove_punct = T, remove_numbers = T, remove_separators = T) %>% 
+  tokens_remove(stopwords("es", source = "nltk")) %>% 
+  tokens_wordstem(language = "spanish") %>% 
+  dfm() %>%
+  dfm_trim(min_docfreq=10,verbose=TRUE)
+```
 
+Naive-Bayes: 
 
+```{r}
+hatemod.nb <- textmodel_nb(dfmat_train, docvars(dfmat_train, "hate"), distribution = "Bernoulli")
+summary(hatemod.nb)
+```
+
+```{r}
+dfmat_matched <- dfm_match(dfmat_test, features=featnames(dfmat_train))
+```
+
+```{r}
+actual_class <- docvars(dfmat_matched, "hate")
+predicted_class <- predict(hatemod.nb, newdata=dfmat_matched, type = "prob")
+predicted_class <- as.factor(ifelse(predicted_class[,2] > 0.1, "Yes", "No"))
+tab_class <- table(actual_class,predicted_class)
+tab_class
+```
+
+SVM: 
+
+```{r}
+library(e1071)
+
+sentmod.svm <- svm(x=dfmat_train,
+                   y=as.factor(docvars(dfmat_train)$hate),
+                   kernel="linear", 
+                   cost=10,  # arbitrary regularization cost
+                   probability=TRUE)
+```
+
+```{r}
+predicted_class.svm <- predict(sentmod.svm, newdata=dfmat_matched)
+tab_class.svm <- table(actual_class,predicted_class.svm)
+tab_class.svm
+```
+
+```{r}
+confusionMatrix(tab_class.svm, mode="everything", positive="Yes")
+```
 
 
 
