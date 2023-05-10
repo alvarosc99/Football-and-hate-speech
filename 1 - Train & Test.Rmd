@@ -23,9 +23,7 @@ library(caret)
 library(textrecipes)
 library(SnowballC)
 library(rsample)
-library(workflows)
-library(discrim)
-library(tidymodels)
+library(quanteda)
 ```
 
 ```{r}
@@ -74,7 +72,7 @@ df <- df %>%
          text = str_replace_all(text, "👏+|💪+|✊+|💪+|❤️+|🥰+|❤+|🤍+", " tokenpositivo "),
          text = ji_replace_all(text, ""),
          text = iconv(text, to = "UTF-8//IGNORE"),
-         text = str_replace_all(text, "\\b(?:a*(?:ha*){2,}h?)\\b|\\b(?:a*(?:ja*)+j?)\\b|\\b(?:e*(?:je*)+j?)\\b|\\b(?:i*(?:ji+)+j?)\\b|\\b(?:A*(?:JA+)+J?)\\b|\\b(?:A*(?:HA+)+H?)\\b|\\b(?:e*(?:he+){2,}h?)\\b|\\b(?:Ja*(?:ja+)+j?)\\b|\\b(?:Je*(?:je+)+j?)\\b|\\bJa+\\b|\\b(?:Ji*(?:ji+)+j?)\\b|\\b(?:Ha*(?:ha+)+h?)\\b|\\b(?:Jo*(?:jo+)+j?)\\b|\\b(?:o*(?:jo+)+j?)\\b|\\b(?:a*((?:ja+)|(?:js+))+j?)\\b|\\b(?:A*((?:JA+)|(?:JS+))+J?)\\b|\\blo*l\\b", ":risa:"))
+         text = str_replace_all(text, "\\b(?:a*(?:ha*){2,}h?)\\b|\\b(?:a*(?:ja*)+j?)\\b|\\b(?:e*(?:je*)+j?)\\b|\\b(?:i*(?:ji+)+j?)\\b|\\b(?:A*(?:JA+)+J?)\\b|\\b(?:A*(?:HA+)+H?)\\b|\\b(?:e*(?:he+){2,}h?)\\b|\\b(?:Ja*(?:ja+)+j?)\\b|\\b(?:Je*(?:je+)+j?)\\b|\\bJa+\\b|\\b(?:Ji*(?:ji+)+j?)\\b|\\b(?:Ha*(?:ha+)+h?)\\b|\\b(?:Jo*(?:jo+)+j?)\\b|\\b(?:o*(?:jo+)+j?)\\b|\\b(?:a*((?:ja+)|(?:js+))+j?)\\b|\\b(?:A*((?:JA+)|(?:JS+))+J?)\\b|\\blo*l\\b", " tokenrisa "))
 
 ```
 
@@ -427,7 +425,6 @@ dfmatrix.rf <- as.matrix(dfmat.rf)
 # Own try: 
 
 ```{r}
-
 corpus <- corpus(df$text, docvars = data.frame(hate = df$hate, hateterm = df$hateterm, mentions = df$entities.mentions, url = df$entities.url))
 summary(corpus)
 
@@ -439,6 +436,7 @@ id_train <- sample(1:4985,4500, replace=F)
 ```
 
 ```{r}
+
 docvars(corpus, "id_numeric") <- 1:ndoc(corpus)
 
 dfmat_train <- corpus_subset(corpus, id_numeric %in% id_train) %>%  
@@ -446,14 +444,17 @@ dfmat_train <- corpus_subset(corpus, id_numeric %in% id_train) %>%
   tokens_remove(stopwords("es", source = "nltk")) %>% 
   tokens_wordstem(language = "spanish") %>% 
   dfm() %>%
-  dfm_trim(min_docfreq=10,verbose=TRUE)
+  dfm_tfidf() %>% 
+  dfm_trim(min_docfreq=2,verbose=TRUE)
 
 dfmat_test <- corpus_subset(corpus, !(id_numeric %in% id_train)) %>% 
   tokens(remove_punct = T, remove_numbers = T, remove_separators = T) %>% 
   tokens_remove(stopwords("es", source = "nltk")) %>% 
   tokens_wordstem(language = "spanish") %>% 
   dfm() %>%
-  dfm_trim(min_docfreq=10,verbose=TRUE)
+  dfm_tfidf() %>% 
+  dfm_trim(min_docfreq=2,verbose=TRUE)
+
 ```
 
 Naive-Bayes: 
@@ -465,10 +466,11 @@ summary(hatemod.nb)
 
 ```{r}
 dfmat_matched <- dfm_match(dfmat_test, features=featnames(dfmat_train))
+actual_class <- docvars(dfmat_matched, "hate")
 ```
 
 ```{r}
-actual_class <- docvars(dfmat_matched, "hate")
+
 predicted_class <- predict(hatemod.nb, newdata=dfmat_matched, type = "prob")
 predicted_class <- as.factor(ifelse(predicted_class[,2] > 0.1, "Yes", "No"))
 tab_class <- table(actual_class,predicted_class)
@@ -485,6 +487,8 @@ sentmod.svm <- svm(x=dfmat_train,
                    kernel="linear", 
                    cost=10,  # arbitrary regularization cost
                    probability=TRUE)
+
+
 ```
 
 ```{r}
@@ -497,6 +501,65 @@ tab_class.svm
 confusionMatrix(tab_class.svm, mode="everything", positive="Yes")
 ```
 
+XGBoosting: 
+
+```{r}
+XGB <- train(x = dfmat_train, 
+             y = as.factor(docvars(dfmat_train)$hate),
+             method = "xgbTree",
+             trControl = trainControl(method="cv", number=5, 
+                                              verboseIter=T),
+  metric = "Sensitivity", # evaluation metric
+  maximize = TRUE # whether to maximize the evaluation metric
+)
+```
 
 
+```{r}
+predicted_class.XGB <- predict(XGB, newdata=dfmat_matched, type = "prob")
+predicted_class.XGB <- as.factor(ifelse(predicted_class.XGB[,2] > 0.35, "Yes", "No"))
+tab_class.XGB <- table(actual_class,predicted_class.XGB)
+tab_class.XGB
+```
+
+```{r}
+confusionMatrix(tab_class.XGB, mode="everything", positive="Yes")
+```
+
+Boosted LR:
+
+```{r}
+
+BLR <- train(x = dfmat_train, 
+             y = dfmat_train$hate,
+             method = "LogitBoost",
+             trControl = trainControl(method="cv", number=5, 
+                                              verboseIter=T,
+                     classProbs = TRUE),
+  metric = "Accuracy", # evaluation metric
+  maximize = TRUE # whether to maximize the evaluation metric
+,  nIter = 1000)
+```
+
+
+Boosted GLM:
+
+```{r}
+
+BGLM <- train(x = dfmat_train, 
+             y = dfmat_train$hate,
+             method = "glm",
+             trControl = trainControl(method="cv", number=5, 
+                                              verboseIter=T,
+                     classProbs = TRUE),
+  metric = "Accuracy", # evaluation metric
+  maximize = TRUE)
+```
+
+```{r}
+predicted_class.XGB <- predict(XGB, newdata=dfmat_matched, type = "prob")
+predicted_class.XGB <- as.factor(ifelse(predicted_class.XGB[,2] > 0.35, "Yes", "No"))
+tab_class.XGB <- table(actual_class,predicted_class.XGB)
+tab_class.XGB
+```
 
