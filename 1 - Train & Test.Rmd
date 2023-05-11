@@ -319,35 +319,6 @@ corpus <- corpus(df$text, docvars = data.frame(hate = df$hate, hateterm = df$hat
 summary(corpus)
 ```
 
-```{r}
-tidy_df <- df %>% 
-  unnest_tokens(word, text)
-
-tidy_df$word <- str_replace_all(tidy_df$word, "(?:^|\\s)q\\b", "que")
-tidy_df$word <- str_replace_all(tidy_df$word, "(?:^|\\s)xq\\b", "porque")
-tidy_df$word <- str_replace_all(tidy_df$word, "(?:^|\\s)xk\\b", "porque")
-tidy_df$word <- str_replace_all(tidy_df$word, "(?:^|\\s)k\\b", "que")
-
-```
-
-Stopwords removal and stemming:
-
-```{r}
-#lemmas <- fread("Lemmatizer/200918/spdictionary.csv")
-#lemmas <- lemmas[-which(word=="moro"),]
-
-stop <- as.tibble(stopwords("es", source = "nltk")) %>% 
-  rename(word = value) 
-stop <- stop[!(stop$word %in% c("sin", "no", "contra", "poco", "pero")), ]
-
-tidy_df <- tidy_df %>% 
-  anti_join(stop) %>% 
-  mutate(word = wordStem(word, language = "spanish"))
-
-#tidy_df$word <- ifelse(is.na(match(tidy_df$word, lemmas$word)), tidy_df$word, lemmas$canonical[match(tidy_df$word, lemmas$word)])
-  
-```
-
 
 ```{r}
 set.seed(1234)
@@ -456,25 +427,22 @@ dfmat_test <- corpus_subset(corpus, !(id_numeric %in% id_train)) %>%
   dfm_trim(min_docfreq=2,verbose=TRUE)
 
 ```
-
-Naive-Bayes: 
-
-```{r}
-hatemod.nb <- textmodel_nb(dfmat_train, docvars(dfmat_train, "hate"), distribution = "Bernoulli")
-summary(hatemod.nb)
-```
-
 ```{r}
 dfmat_matched <- dfm_match(dfmat_test, features=featnames(dfmat_train))
 actual_class <- docvars(dfmat_matched, "hate")
 ```
 
+Naive-Bayes: 
+
 ```{r}
 
-predicted_class <- predict(hatemod.nb, newdata=dfmat_matched, type = "prob")
-predicted_class <- as.factor(ifelse(predicted_class[,2] > 0.1, "Yes", "No"))
-tab_class <- table(actual_class,predicted_class)
-tab_class
+
+
+```
+
+
+```{r}
+
 ```
 
 SVM: 
@@ -501,6 +469,25 @@ tab_class.svm
 confusionMatrix(tab_class.svm, mode="everything", positive="Yes")
 ```
 
+```{r}
+svm_mod <- train(x = dfmat_train,
+                 y = dfmat_train$hate,
+                 method = "svmLinearWeights2",
+                 trControl = trainControl(method="cv", number=5, 
+                                              verboseIter=T,
+                                      classProbs = T),
+                 tuneGrid = data.frame(cost = 1, 
+                                       Loss = 0, 
+                                       weight = 1))
+```
+
+
+```{r}
+predicted_class.svm <- predict(svm_mod, newdata=dfmat_matched)
+tab_class.svm <- table(actual_class,predicted_class.svm)
+tab_class.svm
+```
+
 XGBoosting: 
 
 ```{r}
@@ -508,10 +495,13 @@ XGB <- train(x = dfmat_train,
              y = as.factor(docvars(dfmat_train)$hate),
              method = "xgbTree",
              trControl = trainControl(method="cv", number=5, 
-                                              verboseIter=T),
-  metric = "Sensitivity", # evaluation metric
+                                              verboseIter=T,
+                                      classProbs = T),
+  metric = "ROC", # evaluation metric
   maximize = TRUE # whether to maximize the evaluation metric
 )
+
+#nrounds = 50, max_depth = 3, eta = 0.3, gamma = 0, colsample_bytree = 0.6, min_child_weight = 1, subsample = 1
 ```
 
 
@@ -526,40 +516,175 @@ tab_class.XGB
 confusionMatrix(tab_class.XGB, mode="everything", positive="Yes")
 ```
 
-Boosted LR:
+LR:
 
 ```{r}
 
-BLR <- train(x = dfmat_train, 
-             y = dfmat_train$hate,
-             method = "LogitBoost",
+logit.model = glm(dfmat_train$hate ~ ., family = binomial(link = 'logit'), dfmat_train)
+
+logprobability = predict(logit.model, newdata=dfmat_matched, type="response")
+head(logprobability)
+```
+
+
+Lasso: 
+
+```{r}
+library(glmnet)
+#registerDoMC(cores=2) # parallelize to speed up
+sentmod.lasso <- cv.glmnet(x=dfmat_train,
+                   y=docvars(dfmat_train)$hate,
+                   family="binomial", 
+                   alpha=1,  # alpha = 1: LASSO
+                   nfolds=5, # 5-fold cross-validation
+                   parallel=TRUE, 
+                   intercept=TRUE,
+                   type.measure="class")
+```
+```{r}
+predicted_value.lasso <- predict(sentmod.lasso, newx=dfmat_matched,s="lambda.min")[,1]
+predicted_class.lasso <- rep(NA,length(predicted_value.lasso))
+predicted_class.lasso[predicted_value.lasso>0] <- "pos"
+predicted_class.lasso[predicted_value.lasso<0] <- "neg"
+tab_class.lasso <- table(actual_class,predicted_class.lasso)
+tab_class.lasso
+```
+
+# Trying with the 3 datasets
+
+```{r}
+df2 <- annotation_b %>% 
+  rbind(annotation_c) %>% 
+  mutate(id = row_number() + 5000)  %>% 
+  distinct(text, .keep_all = T) %>% 
+  mutate(text = tolower(text),
+         entities.mentions = ifelse(str_detect(text, "@.{1,15} "), 1, 0),
+         entities.url = ifelse(str_detect(text, "https://.*\\b"), 1, 0),
+         text = str_remove_all(text, "@.{1,15} "),
+         text = str_remove_all(text, "https://.*\\b"),
+         hateterm = str_detect(text, "(?:^|\\s)moros?\\b|(?:^|\\s)maric[oó]na?e?s?\\b|(?:^|\\s)monos?\\b|(?:^|\\s)putas?\\b|(?:^|\\s)hijos? de puta\\b|(?:^|\\s)hijos?deputa|(?:^|\\s)zorras?\\b|(?:^|\\s)panchitos?\\b")) %>% 
+  mutate(text = str_replace_all(text, "🏻|🏼|🏽|🏾|🏿", ""),
+         text = str_replace_all(text, "\\\\n|&lt", " "), 
+         text = str_replace_all(text, "🤣+|😂+", " tokenrisa "),
+         text = str_replace_all(text, "🐀+", " tokenrata "),
+         text = str_replace_all(text, "😡+|🔪+|🤬+|👊+|🪓+|🤮+|💩+", " tokenenfado "),
+         text = str_replace_all(text, "👏+|💪+|✊+|💪+|❤️+|🥰+|❤+|🤍+", " tokenpositivo "),
+         text = ji_replace_all(text, ""),
+         text = iconv(text, to = "UTF-8//IGNORE"),
+         text = str_replace_all(text, "\\b(?:a*(?:ha*){2,}h?)\\b|\\b(?:a*(?:ja*)+j?)\\b|\\b(?:e*(?:je*)+j?)\\b|\\b(?:i*(?:ji+)+j?)\\b|\\b(?:A*(?:JA+)+J?)\\b|\\b(?:A*(?:HA+)+H?)\\b|\\b(?:e*(?:he+){2,}h?)\\b|\\b(?:Ja*(?:ja+)+j?)\\b|\\b(?:Je*(?:je+)+j?)\\b|\\bJa+\\b|\\b(?:Ji*(?:ji+)+j?)\\b|\\b(?:Ha*(?:ha+)+h?)\\b|\\b(?:Jo*(?:jo+)+j?)\\b|\\b(?:o*(?:jo+)+j?)\\b|\\b(?:a*((?:ja+)|(?:js+))+j?)\\b|\\b(?:A*((?:JA+)|(?:JS+))+J?)\\b|\\blo*l\\b", " tokenrisa "))
+```
+
+```{r}
+df3 <- rbind(df, df2)
+
+corpus2 <- corpus(df3$text, docvars = data.frame(hate = df3$hate, hateterm = df3$hateterm, mentions = df3$entities.mentions, url = df3$entities.url))
+summary(corpus2)
+```
+
+```{r}
+set.seed(1234)
+id_train <- sample(1:13624,12000, replace=F)
+```
+
+```{r}
+
+docvars(corpus2, "id_numeric") <- 1:ndoc(corpus2)
+
+dfmat_train2 <- corpus_subset(corpus, id_numeric %in% id_train) %>%  
+  tokens(remove_punct = T, remove_numbers = T, remove_separators = T) %>% 
+  tokens_remove(stopwords("es", source = "nltk")) %>% 
+  tokens_wordstem(language = "spanish") %>% 
+  dfm() %>%
+  dfm_tfidf() %>% 
+  dfm_trim(min_docfreq=2,verbose=TRUE)
+
+dfmat_test2 <- corpus_subset(corpus, !(id_numeric %in% id_train)) %>% 
+  tokens(remove_punct = T, remove_numbers = T, remove_separators = T) %>% 
+  tokens_remove(stopwords("es", source = "nltk")) %>% 
+  tokens_wordstem(language = "spanish") %>% 
+  dfm() %>%
+  dfm_tfidf() %>% 
+  dfm_trim(min_docfreq=2,verbose=TRUE)
+
+```
+```{r}
+dfmat_matched2 <- dfm_match(dfmat_test2, features=featnames(dfmat_train2))
+actual_class <- docvars(dfmat_matched2, "hate")
+```
+
+SVM:
+
+```{r}
+svm_mod <- train(x = dfmat_train2,
+                 y = dfmat_train2$hate,
+                 method = "svmLinearWeights2",
+                 trControl = trainControl(method="cv", number=5, 
+                                              verboseIter=T,
+                                      classProbs = T),
+                 tuneGrid = data.frame(cost = 1, 
+                                       Loss = 0, 
+                                       weight = 1))
+```
+
+
+```{r}
+predicted_class.svm <- predict(svm_mod, newdata=dfmat_matched2)
+tab_class.svm <- table(actual_class,predicted_class.svm)
+tab_class.svm
+```
+
+```{r}
+library(glmnet)
+#registerDoMC(cores=2) # parallelize to speed up
+sentmod.lasso <- cv.glmnet(x=dfmat_train2,
+                   y=docvars(dfmat_train2)$hate,
+                   family="binomial", 
+                   alpha=1,  # alpha = 1: LASSO
+                   nfolds=5, # 5-fold cross-validation
+                   parallel=TRUE, 
+                   intercept=TRUE,
+                   type.measure="class")
+```
+
+
+```{r}
+predicted_value.lasso <- predict(sentmod.lasso, newx=dfmat_matched2,s="lambda.min")[,1]
+predicted_class.lasso <- rep(NA,length(predicted_value.lasso))
+predicted_class.lasso[predicted_value.lasso>0] <- "pos"
+predicted_class.lasso[predicted_value.lasso<0] <- "neg"
+tab_class.lasso <- table(actual_class,predicted_class.lasso)
+tab_class.lasso
+```
+
+```{r}
+XGB <- train(x = dfmat_train2, 
+             y = as.factor(docvars(dfmat_train2)$hate),
+             method = "xgbTree",
              trControl = trainControl(method="cv", number=5, 
                                               verboseIter=T,
-                     classProbs = TRUE),
-  metric = "Accuracy", # evaluation metric
+                                      classProbs = T),
+  metric = "ROC", # evaluation metric
   maximize = TRUE # whether to maximize the evaluation metric
-,  nIter = 1000)
+)
+
+#nrounds = 50, max_depth = 3, eta = 0.3, gamma = 0, colsample_bytree = 0.6, min_child_weight = 1, subsample = 1
 ```
 
 
-Boosted GLM:
-
 ```{r}
-
-BGLM <- train(x = dfmat_train, 
-             y = dfmat_train$hate,
-             method = "glm",
-             trControl = trainControl(method="cv", number=5, 
-                                              verboseIter=T,
-                     classProbs = TRUE),
-  metric = "Accuracy", # evaluation metric
-  maximize = TRUE)
-```
-
-```{r}
-predicted_class.XGB <- predict(XGB, newdata=dfmat_matched, type = "prob")
+predicted_class.XGB <- predict(XGB, newdata=dfmat_matched2, type = "prob")
 predicted_class.XGB <- as.factor(ifelse(predicted_class.XGB[,2] > 0.35, "Yes", "No"))
 tab_class.XGB <- table(actual_class,predicted_class.XGB)
 tab_class.XGB
 ```
+
+```{r}
+confusionMatrix(tab_class.XGB, mode="everything", positive="Yes")
+```
+
+
+
+
+
+
 
