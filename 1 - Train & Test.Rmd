@@ -53,7 +53,7 @@ df <- df %>%
   mutate(text = tolower(text),
          entities.mentions = ifelse(str_detect(text, "@.{1,15} "), 1, 0),
          entities.url = ifelse(str_detect(text, "https://.*\\b"), 1, 0),
-         text = str_remove_all(text, "@.{1,15} "),
+         #text = str_remove_all(text, "@.{1,15} "),
          text = str_remove_all(text, "https://.*\\b"),
          hateterm = str_detect(text, "(?:^|\\s)moros?\\b|(?:^|\\s)maric[oó]na?e?s?\\b|(?:^|\\s)monos?\\b|(?:^|\\s)putas?\\b|(?:^|\\s)hijos? de puta\\b|(?:^|\\s)hijos?deputa|(?:^|\\s)zorras?\\b|(?:^|\\s)panchitos?\\b"))
 
@@ -560,7 +560,7 @@ df2 <- annotation_b %>%
   mutate(text = tolower(text),
          entities.mentions = ifelse(str_detect(text, "@.{1,15} "), 1, 0),
          entities.url = ifelse(str_detect(text, "https://.*\\b"), 1, 0),
-         text = str_remove_all(text, "@.{1,15} "),
+         #text = str_remove_all(text, "@.{1,15} "),
          text = str_remove_all(text, "https://.*\\b"),
          hateterm = str_detect(text, "(?:^|\\s)moros?\\b|(?:^|\\s)maric[oó]na?e?s?\\b|(?:^|\\s)monos?\\b|(?:^|\\s)putas?\\b|(?:^|\\s)hijos? de puta\\b|(?:^|\\s)hijos?deputa|(?:^|\\s)zorras?\\b|(?:^|\\s)panchitos?\\b")) %>% 
   mutate(text = str_replace_all(text, "🏻|🏼|🏽|🏾|🏿", ""),
@@ -657,11 +657,10 @@ tab_class.lasso
 ```
 
 ```{r}
-XGB <- train(x = dfmat_train2, 
+XGB <- train(x = dfmat_train, 
              y = as.factor(docvars(dfmat_train2)$hate),
              method = "xgbTree",
-             trControl = trainControl(method="cv", number=5, 
-                                              verboseIter=T,
+             trControl = trainControl(method="cv", number=5,
                                       classProbs = T),
   metric = "ROC", # evaluation metric
   maximize = TRUE # whether to maximize the evaluation metric
@@ -682,7 +681,83 @@ tab_class.XGB
 confusionMatrix(tab_class.XGB, mode="everything", positive="Yes")
 ```
 
+# Trying with n-grams
 
+
+```{r}
+set.seed(1234)
+id_train <- sample(1:4985,4500, replace=F)
+```
+
+
+```{r}
+docvars(corpus, "id_numeric") <- 1:ndoc(corpus)
+
+dfmat_train <- corpus_subset(corpus, id_numeric %in% id_train) %>%  
+  tokens(remove_punct = T, remove_numbers = T, remove_separators = T) %>% 
+  tokens_remove(stopwords("es", source = "nltk")) %>% 
+  tokens_wordstem(language = "spanish") %>% 
+  tokens_ngrams(n = 2) %>% 
+  dfm() %>%
+  dfm_tfidf() %>% 
+  dfm_trim(min_docfreq=2,verbose=TRUE)
+
+dfmat_test <- corpus_subset(corpus, !(id_numeric %in% id_train)) %>% 
+  tokens(remove_punct = T, remove_numbers = T, remove_separators = T) %>% 
+  tokens_remove(stopwords("es", source = "nltk")) %>% 
+  tokens_wordstem(language = "spanish") %>% 
+  tokens_ngrams(n = 2) %>% 
+  dfm() %>%
+  dfm_tfidf() %>% 
+  dfm_trim(min_docfreq=2,verbose=TRUE)
+
+```
+
+```{r}
+dfmat_matched <- dfm_match(dfmat_test, features=featnames(dfmat_train))
+actual_class <- docvars(dfmat_matched, "hate")
+```
+
+```{r}
+XGB <- train(x = dfmat_train, 
+             y = as.factor(docvars(dfmat_train)$hate),
+             method = "xgbTree",
+             trControl = trainControl(method="cv", number=5, 
+                                              verboseIter=T,
+                                      classProbs = T),
+  metric = "ROC", # evaluation metric
+  maximize = TRUE # whether to maximize the evaluation metric
+)
+
+#nrounds = 50, max_depth = 3, eta = 0.3, gamma = 0, colsample_bytree = 0.6, min_child_weight = 1, subsample = 1
+```
+
+
+```{r}
+predicted_class.XGB <- predict(XGB, newdata=dfmat_matched, type = "prob")
+predicted_class.XGB <- as.factor(ifelse(predicted_class.XGB[,2] > 0.2, "Yes", "No"))
+tab_class.XGB <- table(actual_class,predicted_class.XGB)
+tab_class.XGB
+```
+
+```{r}
+svm_mod <- train(x = dfmat_train,
+                 y = dfmat_train$hate,
+                 method = "svmLinearWeights2",
+                 trControl = trainControl(method="cv", number=5, 
+                                              verboseIter=T,
+                                      classProbs = T),
+                 tuneGrid = data.frame(cost = 1, 
+                                       Loss = 0, 
+                                       weight = 1))
+```
+
+
+```{r}
+predicted_class.svm <- predict(svm_mod, newdata=dfmat_matched)
+tab_class.svm <- table(actual_class,predicted_class.svm)
+tab_class.svm
+```
 
 
 
