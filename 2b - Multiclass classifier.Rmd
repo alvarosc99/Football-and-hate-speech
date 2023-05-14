@@ -1,0 +1,12 @@
+---
+title: "Match classificator"
+author: '100385774'
+date: "2023-05-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The goal in this Rmd is to build another ML predictor with the goal of correctly classifying from which match does the tweet come from/belong. 

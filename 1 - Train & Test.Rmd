@@ -53,7 +53,7 @@ df <- df %>%
   mutate(text = tolower(text),
          entities.mentions = ifelse(str_detect(text, "@.{1,15} "), 1, 0),
          entities.url = ifelse(str_detect(text, "https://.*\\b"), 1, 0),
-         #text = str_remove_all(text, "@.{1,15} "),
+         #text = str_replace_all(text, "[^[:alnum:]]", ""),
          text = str_remove_all(text, "https://.*\\b"),
          hateterm = str_detect(text, "(?:^|\\s)moros?\\b|(?:^|\\s)maric[oó]na?e?s?\\b|(?:^|\\s)monos?\\b|(?:^|\\s)putas?\\b|(?:^|\\s)hijos? de puta\\b|(?:^|\\s)hijos?deputa|(?:^|\\s)zorras?\\b|(?:^|\\s)panchitos?\\b"))
 
@@ -84,7 +84,8 @@ df <- df %>%
          entities.mentions = factor(entities.mentions, levels = c(0,1)),
          hateterm = case_when(hateterm == F ~ 0, 
                               hateterm == T ~ 1),
-         hateterm = factor(hateterm, levels = c(0,1)))
+         hateterm = factor(hateterm, levels = c(0,1)),
+         text = str_replace_all(text, "@|#|\\|+", ""))
 ```
 
 
@@ -396,6 +397,7 @@ dfmatrix.rf <- as.matrix(dfmat.rf)
 # Own try: 
 
 ```{r}
+
 corpus <- corpus(df$text, docvars = data.frame(hate = df$hate, hateterm = df$hateterm, mentions = df$entities.mentions, url = df$entities.url))
 summary(corpus)
 
@@ -413,7 +415,8 @@ docvars(corpus, "id_numeric") <- 1:ndoc(corpus)
 dfmat_train <- corpus_subset(corpus, id_numeric %in% id_train) %>%  
   tokens(remove_punct = T, remove_numbers = T, remove_separators = T) %>% 
   tokens_remove(stopwords("es", source = "nltk")) %>% 
-  tokens_wordstem(language = "spanish") %>% 
+  tokens_wordstem(language = "spanish") %>%
+  tokens_remove("[^[:alnum:]]+|🁴*") %>% 
   dfm() %>%
   dfm_tfidf() %>% 
   dfm_trim(min_docfreq=2,verbose=TRUE)
@@ -422,6 +425,7 @@ dfmat_test <- corpus_subset(corpus, !(id_numeric %in% id_train)) %>%
   tokens(remove_punct = T, remove_numbers = T, remove_separators = T) %>% 
   tokens_remove(stopwords("es", source = "nltk")) %>% 
   tokens_wordstem(language = "spanish") %>% 
+  tokens_remove("[^[:alnum:]]+|🁴*") %>% 
   dfm() %>%
   dfm_tfidf() %>% 
   dfm_trim(min_docfreq=2,verbose=TRUE)
@@ -430,6 +434,7 @@ dfmat_test <- corpus_subset(corpus, !(id_numeric %in% id_train)) %>%
 ```{r}
 dfmat_matched <- dfm_match(dfmat_test, features=featnames(dfmat_train))
 actual_class <- docvars(dfmat_matched, "hate")
+names = as.data.frame(featnames(dfmat_matched))
 ```
 
 Naive-Bayes: 
@@ -501,7 +506,6 @@ XGB <- train(x = dfmat_train,
   maximize = TRUE # whether to maximize the evaluation metric
 )
 
-#nrounds = 50, max_depth = 3, eta = 0.3, gamma = 0, colsample_bytree = 0.6, min_child_weight = 1, subsample = 1
 ```
 
 
@@ -549,6 +553,27 @@ predicted_class.lasso[predicted_value.lasso<0] <- "neg"
 tab_class.lasso <- table(actual_class,predicted_class.lasso)
 tab_class.lasso
 ```
+
+RF: 
+
+```{r}
+library(randomForest)
+RF_model = randomForest(docvars(dfmat_train)$hate ~ ., data=dfmat_train)
+
+
+predictRF = predict(RF_model, newdata=testSparse)
+
+table(testSparse$recommended_id, predictRF)
+```
+
+```{r}
+rfprobability = predict(rfFit, testing, type="prob")
+
+rfprediction <- as.factor(ifelse(rfprobability[,2] > 0.2, "Yes", "No"))
+
+confusionMatrix(rfprediction, testing$Attrition, positive = "Yes")
+```
+
 
 # Trying with the 3 datasets
 
