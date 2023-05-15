@@ -133,6 +133,7 @@ tidy_df <- tidy_df %>%
 ```{r}
 
 corpus <- corpus(df$text, docvars = data.frame(hate = df$hate, hateterm = df$hateterm, mentions = df$entities.mentions, url = df$entities.url))
+summary(corpus)
 
 ```
 

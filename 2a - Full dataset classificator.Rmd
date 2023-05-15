@@ -6,10 +6,114 @@ output: html_document
 ---
 
 ```{r}
+library(tidyverse)
+library(data.table)
+library(ggplot2)
+library(stringr)
+library(openxlsx)
+library(lubridate)
+library(emo)
+library(stopwords)
+library(tidytext)
+library(caret)
+library(textrecipes)
+library(SnowballC)
+library(rsample)
+library(quanteda)
+```
+
+
+```{r}
 XGB <- readRDS("data/XGB_model.rds")
+```
+
+```{r}
+df <- fread("data/tweets.csv")
+
+```
+
+```{r}
+df <- df %>% 
+  select(c(id, text)) %>% 
+  mutate(hate = 0,
+  hate = case_when(hate == 0 ~ "No", 
+                   hate == 1 ~ "Yes"),
+  hate = factor(hate, levels = c("No", "Yes"))
+)
+```
+
+```{r}
+df <- df %>% 
+  distinct(text, .keep_all = T) %>% 
+  mutate(text = tolower(text),
+         entities.mentions = ifelse(str_detect(text, "@.{1,15} "), 1, 0),
+         entities.url = ifelse(str_detect(text, "https://.*\\b"), 1, 0),
+         #text = str_replace_all(text, "[^[:alnum:]]", ""),
+         text = str_remove_all(text, "https://.*\\b"),
+         hateterm = str_detect(text, "(?:^|\\s)moros?\\b|(?:^|\\s)maric[oó]na?e?s?\\b|(?:^|\\s)monos?\\b|(?:^|\\s)putas?\\b|(?:^|\\s)hijos? de puta\\b|(?:^|\\s)hijos?deputa|(?:^|\\s)zorras?\\b|(?:^|\\s)panchitos?\\b"))
+```
+
+```{r}
+df <- df %>% 
+  mutate(text = str_replace_all(text, "🏻|🏼|🏽|🏾|🏿", ""),
+         text = str_replace_all(text, "\\\\n|&lt", " "), 
+         text = str_replace_all(text, "🤣+|😂+", " tokenrisa "),
+         text = str_replace_all(text, "🐀+", " tokenrata "),
+         text = str_replace_all(text, "😡+|🔪+|🤬+|👊+|🪓+|🤮+|💩+", " tokenenfado "),
+         text = str_replace_all(text, "👏+|💪+|✊+|💪+|❤️+|🥰+|❤+|🤍+", " tokenpositivo "),
+         text = ji_replace_all(text, ""),
+         text = iconv(text, to = "UTF-8//IGNORE"),
+         text = str_replace_all(text, "\\b(?:a*(?:ha*){2,}h?)\\b|\\b(?:a*(?:ja*)+j?)\\b|\\b(?:e*(?:je*)+j?)\\b|\\b(?:i*(?:ji+)+j?)\\b|\\b(?:A*(?:JA+)+J?)\\b|\\b(?:A*(?:HA+)+H?)\\b|\\b(?:e*(?:he+){2,}h?)\\b|\\b(?:Ja*(?:ja+)+j?)\\b|\\b(?:Je*(?:je+)+j?)\\b|\\bJa+\\b|\\b(?:Ji*(?:ji+)+j?)\\b|\\b(?:Ha*(?:ha+)+h?)\\b|\\b(?:Jo*(?:jo+)+j?)\\b|\\b(?:o*(?:jo+)+j?)\\b|\\b(?:a*((?:ja+)|(?:js+))+j?)\\b|\\b(?:A*((?:JA+)|(?:JS+))+J?)\\b|\\blo*l\\b", " tokenrisa "))
+```
+
+```{r}
+df <- df %>% 
+  mutate(entities.url = factor(entities.url, levels = c(0,1)),
+         entities.mentions = factor(entities.mentions, levels = c(0,1)),
+         hateterm = case_when(hateterm == F ~ 0, 
+                              hateterm == T ~ 1),
+         hateterm = factor(hateterm, levels = c(0,1)),
+         text = str_replace_all(text, "@|#|\\|+", ""),
+         text = stringi::stri_replace_all_regex(text, "[^[:alnum:][:space:]]+|\\p{So}+|[0-9]+", ""))
+```
+
+```{r}
+
+corpus <- corpus(df$text, docvars = data.frame(hate = df$hate, hateterm = df$hateterm, mentions = df$entities.mentions, url = df$entities.url))
+summary(corpus)
+
+```
+
+```{r}
+set.seed(1234)
+id <- seq(1:nrow(df))
+
+```
+
+```{r}
+dfmat <- corpus %>%  
+  tokens(remove_punct = T, remove_numbers = T, remove_separators = T) %>% 
+  tokens_remove(stopwords("es", source = "nltk")) %>% 
+  tokens_wordstem(language = "spanish") %>%
+  #tokens_remove("[^[:alnum:]]+|[^\\p{L}\\p{N}]+") %>% 
+  dfm() %>%
+  dfm_tfidf() %>% 
+  dfm_trim(min_docfreq=5,verbose=TRUE)
+```
+```{r}
+dfmat
+```
+
+```{r}
+tokens = featnames(dfmat)
+write.csv(tokens, file = "data/tokens.txt")
 ```
 
 ```{r}
 
 ```
+
+
+
+
 
