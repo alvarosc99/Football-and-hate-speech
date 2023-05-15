@@ -1,0 +1,15 @@
+---
+title: "2a - Full dataset classificator"
+author: '100385774'
+date: "2023-04-18"
+output: html_document
+---
+
+```{r}
+XGB <- readRDS("data/XGB_model.rds")
+```
+
+```{r}
+
+```
+

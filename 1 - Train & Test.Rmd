@@ -5,6 +5,8 @@ date: "2023-04-27"
 output: html_document
 ---
 
+# Data opening and pre-processing
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -45,7 +47,7 @@ annotation_c <- read.delim("data/hateval/hateval2019_es_train.csv", sep = ",") %
 ```
 
 
-Noise removal (bots), Boolean mention and URL presence, Boolean terms presence, lower casing, time conversion: 
+## Noise removal (bots), Boolean mention and URL presence, Boolean terms presence, lower casing, time conversion: 
 
 ```{r}
 df <- df %>% 
@@ -59,7 +61,7 @@ df <- df %>%
 
 ```
 
-Emojis and laughs tokenization: 
+## Emojis and laughs tokenization: 
 https://regex101.com/r/UbZ90u/1
 
 ```{r}
@@ -76,7 +78,7 @@ df <- df %>%
 
 ```
 
-Other features factorize: 
+## Other features factorizing: 
 
 ```{r}
 df <- df %>% 
@@ -85,11 +87,13 @@ df <- df %>%
          hateterm = case_when(hateterm == F ~ 0, 
                               hateterm == T ~ 1),
          hateterm = factor(hateterm, levels = c(0,1)),
-         text = str_replace_all(text, "@|#|\\|+", ""))
+         text = str_replace_all(text, "@|#|\\|+", ""),
+         text = stringi::stri_replace_all_regex(text, "[^[:alnum:][:space:]]+|\\p{So}+|[0-9]+", ""))
 ```
 
 
 
+## (Deprecated)
 Tokenizing and misspellings correction: 
 
 ```{r eval=FALSE, include=FALSE}
@@ -124,282 +128,11 @@ tidy_df <- tidy_df %>%
 
 # Building the model
 
-## Tidymodels
-
-Train and test partitions: 
-
-```{r}
-hate_split <- initial_split(df, strata = hate)
-
-hate_train <- training(hate_split)
-hate_test <- testing(hate_split)
-
-dim(hate_train)
-```
-
-```{r}
-hate_rec <- recipe(hate ~ text + entities.mentions + entities.url + hateterm, data = hate_train)
-```
-
-```{r}
-hate_rec <- hate_rec %>% 
-  step_tokenize(text) %>% 
-  step_stopwords(text, language = "es", keep = F) %>% 
-  step_stem(text, options = list(language = "es")) %>% 
-  step_tfidf(text)
-
-hate_wf <- workflow() %>% 
-  add_recipe(hate_rec)
-```
-
-```{r}
-nb_spec <- naive_Bayes() %>% 
-  set_mode("classification") %>% 
-  set_engine("naivebayes")
-```
-
-```{r}
-nb_fit <- hate_wf %>% 
-  add_model(nb_spec) %>% 
-  fit(data = hate_train)
-```
-
-Cross-validation:
-
-```{r}
-set.seed(123)
-hate_folds <- vfold_cv(hate_train)
-```
-
-```{r}
-hate_wf <- workflow() %>%
-add_recipe(hate_rec) %>%
-add_model(nb_spec)
-```
-
-```{r}
-nb_rs <- fit_resamples(
-hate_wf,
-hate_folds,
-control = control_resamples(save_pred = TRUE)
-)
-```
-
-```{r}
-nb_rs_metrics <- collect_metrics(nb_rs)
-nb_rs_predictions <- collect_predictions(nb_rs)
-
-nb_rs_metrics
-nb_rs_predictions
-```
-
-```{r}
-conf_mat_resampled(nb_rs, tidy = FALSE) %>%
-autoplot(type = "heatmap")
-```
-
-Logistic regression:
-
-```{r}
-hate_wf2 <- workflow() %>% 
-  add_recipe(hate_rec)
-```
-
-```{r}
-glm_spec <- discrim_linear() %>% 
-  set_mode("classification") %>% 
-  set_engine("MASS")
-```
-
-```{r}
-glm_fit <- hate_wf2 %>% 
-  add_model(glm_spec) %>% 
-  fit(data = hate_train)
-```
-
-Cross-validation:
-
-```{r}
-set.seed(123)
-
-hate_wf2 <- workflow() %>%
-add_recipe(hate_rec) %>%
-add_model(glm_spec)
-```
-
-```{r}
-glm_rs <- fit_resamples(
-hate_wf2,
-hate_folds,
-control = control_resamples(save_pred = TRUE)
-)
-```
-
-```{r}
-glm_rs_metrics <- collect_metrics(glm_rs)
-glm_rs_predictions <- collect_predictions(glm_rs)
-
-glm_rs_metrics
-```
-
-```{r}
-conf_mat_resampled(glm_rs, tidy = FALSE) %>%
-autoplot(type = "heatmap")
-```
-
-## Caret (DTM)
-
-```{r}
-dtm <- tidy_df %>% 
-  count(id, word, sort = T) %>% 
-  bind_tf_idf(word, id, n) %>% 
-  cast_dtm(id, word, tf_idf)
-
-dtm
-```
-
-```{r}
-require(tm)
-dtm <- removeSparseTerms(dtm, sparse = .995)
-dtm
-```
-
-```{r}
-meta <- tibble(id = as.numeric(dimnames(dtm)[[1]])) %>%
-  left_join(df[!duplicated(df$id), ], by = "id")
-```
-
-```{r}
-set.seed(1234)
-trainIndex <- createDataPartition(meta$hate, p = 0.8, list = FALSE, times = 1)
-```
-
-```{r}
-df_train <- dtm[trainIndex, ] %>% as.matrix() %>% as.data.frame()
-df_test <- dtm[-trainIndex, ] %>% as.matrix() %>% as.data.frame()
-
-response_train <- df$hate[trainIndex]
-```
-
-RF:
-
-```{r}
-ctrl <- trainControl(method = "none")
-```
-
-
-```{r}
-rf_mod <- train(x = df_train, 
-                y = as.factor(response_train), 
-                method = "ranger",
-                trControl = ctrl,
-                tuneGrid = data.frame(mtry = floor(sqrt(dim(df_train)[2])),
-                                      splitrule = "gini",
-                                      min.node.size = 1),
-                type = "prob")
-```
-
-
-```{r}
-rf_pred <- predict(rf_mod,
-                   newdata = df_test)
-
-rf_cm <- confusionMatrix(rf_pred, meta[-trainIndex, ]$hate)
-rf_cm
-```
-
-## Quanteda corpus (DFM)
-
-https://burtmonroe.github.io/TextAsDataCourse/Tutorials/TADA-ClassificationV2.nb.html
-https://tutorials.quanteda.io/basic-operations/workflow/
-
-```{r}
-library(quanteda)
-library(quanteda.textmodels)
-corpus <- corpus(df$text, docvars = data.frame(hate = df$hate, hateterm = df$hateterm, mentions = df$entities.mentions, url = df$entities.url))
-summary(corpus)
-```
-
-
-```{r}
-set.seed(1234)
-id_train <- sample(1:4985,4500, replace=F)
-```
-
-```{r}
-docvars(corpus, "id_numeric") <- 1:ndoc(corpus)
-
-dfmat_train <- corpus_subset(corpus, id_numeric %in% id_train) %>% 
-  tokens() %>% 
-  dfm() 
-
-dfmat_test <- corpus_subset(corpus, !(id_numeric %in% id_train)) %>% 
-  tokens() %>% 
-  dfm() 
-```
-
-```{r}
-hatemod.nb <- textmodel_nb(dfmat_train, docvars(dfmat_train, "hate"), distribution = "Bernoulli")
-summary(hatemod.nb)
-```
-
-```{r}
-dfmat_matched <- dfm_match(dfmat_test, features=featnames(dfmat_train))
-```
-
-```{r}
-actual_class <- docvars(dfmat_matched, "hate")
-predicted_class <- predict(hatemod.nb, newdata=dfmat_matched, type = "prob")
-predicted_class <- as.factor(ifelse(predicted_class[,2] > 0.1, "Yes", "No"))
-tab_class <- table(actual_class,predicted_class)
-tab_class
-```
-
-```{r}
-caret::confusionMatrix(tab_class, mode="everything", positive="Yes")
-```
-
-SVM: 
-```{r}
-library(e1071)
-
-sentmod.svm <- svm(x=dfmat_train,
-                   y=as.factor(docvars(dfmat_train)$hate),
-                   kernel="linear", 
-                   cost=10,  # arbitrary regularization cost
-                   probability=TRUE)
-```
-
-```{r}
-
-predicted_class.svm <- predict(sentmod.svm, newdata=dfmat_matched, type = "prob")
-tab_class.svm <- table(actual_class,predicted_class.svm)
-tab_class.svm
-```
-
-```{r}
-confusionMatrix(tab_class.svm, mode="everything", positive="Yes")
-```
-
-RF: 
-
-```{r}
-library(randomForest)
-
-dfmat.rf <- corpus %>%
-  tokens() %>%
-  dfm() %>%
-  dfm_trim(min_docfreq=50,max_docfreq=300,verbose=TRUE)
-
-dfmatrix.rf <- as.matrix(dfmat.rf)
-```
-
-# Own try: 
+## Corpus and DFM
 
 ```{r}
 
 corpus <- corpus(df$text, docvars = data.frame(hate = df$hate, hateterm = df$hateterm, mentions = df$entities.mentions, url = df$entities.url))
-summary(corpus)
 
 ```
 
@@ -416,7 +149,7 @@ dfmat_train <- corpus_subset(corpus, id_numeric %in% id_train) %>%
   tokens(remove_punct = T, remove_numbers = T, remove_separators = T) %>% 
   tokens_remove(stopwords("es", source = "nltk")) %>% 
   tokens_wordstem(language = "spanish") %>%
-  tokens_remove("[^[:alnum:]]+|🁴*") %>% 
+  #tokens_remove("[^[:alnum:]]+|[^\\p{L}\\p{N}]+") %>% 
   dfm() %>%
   dfm_tfidf() %>% 
   dfm_trim(min_docfreq=2,verbose=TRUE)
@@ -425,7 +158,7 @@ dfmat_test <- corpus_subset(corpus, !(id_numeric %in% id_train)) %>%
   tokens(remove_punct = T, remove_numbers = T, remove_separators = T) %>% 
   tokens_remove(stopwords("es", source = "nltk")) %>% 
   tokens_wordstem(language = "spanish") %>% 
-  tokens_remove("[^[:alnum:]]+|🁴*") %>% 
+  #tokens_remove("[^[:alnum:]]+|[^\\p{L}\\p{N}]+") %>% 
   dfm() %>%
   dfm_tfidf() %>% 
   dfm_trim(min_docfreq=2,verbose=TRUE)
@@ -437,20 +170,8 @@ actual_class <- docvars(dfmat_matched, "hate")
 names = as.data.frame(featnames(dfmat_matched))
 ```
 
-Naive-Bayes: 
 
-```{r}
-
-
-
-```
-
-
-```{r}
-
-```
-
-SVM: 
+## SVM: 
 
 ```{r}
 library(e1071)
@@ -493,7 +214,7 @@ tab_class.svm <- table(actual_class,predicted_class.svm)
 tab_class.svm
 ```
 
-XGBoosting: 
+## XGBoost: 
 
 ```{r}
 XGB <- train(x = dfmat_train, 
@@ -502,16 +223,17 @@ XGB <- train(x = dfmat_train,
              trControl = trainControl(method="cv", number=5, 
                                               verboseIter=T,
                                       classProbs = T),
-  metric = "ROC", # evaluation metric
-  maximize = TRUE # whether to maximize the evaluation metric
+             #summaryFunction = twoClassSummary,
+  metric = "ROC" 
 )
 
+#Fitting nrounds = 150, max_depth = 2, eta = 0.4, gamma = 0, colsample_bytree = 0.8, min_child_weight = 1, subsample = 1 on full training set
 ```
 
 
 ```{r}
-predicted_class.XGB <- predict(XGB, newdata=dfmat_matched, type = "prob")
-predicted_class.XGB <- as.factor(ifelse(predicted_class.XGB[,2] > 0.35, "Yes", "No"))
+predicted_prob.XGB <- predict(XGB, newdata=dfmat_matched, type = "prob")
+predicted_class.XGB <- as.factor(ifelse(predicted_prob.XGB[,2] > 0.3, "Yes", "No"))
 tab_class.XGB <- table(actual_class,predicted_class.XGB)
 tab_class.XGB
 ```
@@ -520,7 +242,18 @@ tab_class.XGB
 confusionMatrix(tab_class.XGB, mode="everything", positive="Yes")
 ```
 
-LR:
+```{r}
+
+library(pROC)
+library(ROCR)
+roc.xgb=roc(dfmat_test$hate ~ predicted_prob.XGB[,2])
+roc.xgb$auc
+
+plot(roc.xgb, col="red",print.thres=TRUE)
+```
+
+
+## LR:
 
 ```{r}
 
@@ -531,7 +264,7 @@ head(logprobability)
 ```
 
 
-Lasso: 
+## Lasso: 
 
 ```{r}
 library(glmnet)
@@ -553,27 +286,6 @@ predicted_class.lasso[predicted_value.lasso<0] <- "neg"
 tab_class.lasso <- table(actual_class,predicted_class.lasso)
 tab_class.lasso
 ```
-
-RF: 
-
-```{r}
-library(randomForest)
-RF_model = randomForest(docvars(dfmat_train)$hate ~ ., data=dfmat_train)
-
-
-predictRF = predict(RF_model, newdata=testSparse)
-
-table(testSparse$recommended_id, predictRF)
-```
-
-```{r}
-rfprobability = predict(rfFit, testing, type="prob")
-
-rfprediction <- as.factor(ifelse(rfprobability[,2] > 0.2, "Yes", "No"))
-
-confusionMatrix(rfprediction, testing$Attrition, positive = "Yes")
-```
-
 
 # Trying with the 3 datasets
 
@@ -784,6 +496,15 @@ tab_class.svm <- table(actual_class,predicted_class.svm)
 tab_class.svm
 ```
 
+# Trying with word2vec
+
+
+
+# Saving the model
+
+```{r}
+saveRDS(XGB, "data/XGB_model.rds")
+```
 
 
 

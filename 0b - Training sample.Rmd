@@ -1,9 +1,13 @@
 ---
-title: "Working Rmd"
+title: "0b. Training sample"
 author: '100385774'
-date: "2023-04-18"
+date: "2023-05-15"
 output: html_document
 ---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 # 0. Loading the data
 
@@ -80,40 +84,3 @@ annotation <- bind_rows(annotation_1, annotation_2, annotation_3, annotation_4, 
 write.xlsx(annotation, file = "annotationbis.xlsx")
 
 ```
-
-# 2. Data Preprocessing and NLP Techniques: 
-
-*APPLY LATER CLD3 PACKAGE
-
-Noise removal (bots), Boolean mention and URL presence, lower casing, time conversion: 
-
-```{r}
-df <- df %>% 
-  select(-c(lang, entities.hashtags)) %>% 
-  distinct(text, author_id, .keep_all = TRUE) %>% 
-  mutate(entities.mentions = ifelse(entities.mentions == "", F, T),
-         entities.urls = ifelse(entities.urls == "", F, T),
-         text = str_remove_all(text, "@.{1,15} "),
-         text = str_remove_all(text, "https://.*\\b"),
-         text = tolower(text), 
-         created_at = as.POSIXct(created_at))
-```
-
-Emojis tokenization: 
-
-```{r}
-df <- df %>% 
-  mutate(text = str_replace_all(text, "🏻|🏼|🏽|🏾|🏿", ""),
-         text = str_replace_all(text, "\\\\n|&lt", " "), 
-         text = str_replace_all(text, "🤣+|😂+", ":risa:"),
-         text = str_replace_all(text, "🐀+", ":rata:"),
-         text = str_replace_all(text, "😡+|🔪+|🤬+|👊+|🪓+|🤮+|💩+", ":enfado:"),
-         text = str_replace_all(text, "👏+|💪+|✊+|💪+|❤️+|🥰+|❤+|🤍+", ":positividad:"),
-         text = ji_replace_all(text, ""),
-         text = iconv(text, to = "UTF-8//IGNORE"),
-         text = str_replace_all(text, "jajaja.*\\.?\\s?|jsjsjs.*\\.?\\s?|jajaj.*\\.?\\s?|jsjsj.*\\.?\\s?|j{1,}a{1,}s{1,}?j{1,}a{1,}s{1,}?.*\\.?\\s?", ":risa: "))
-
-```
-
-
-
