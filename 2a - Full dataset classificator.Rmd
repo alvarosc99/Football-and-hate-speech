@@ -28,12 +28,13 @@ XGB <- readRDS("data/XGB_model.rds")
 ```
 
 ```{r}
-df <- fread("data/tweets.csv")
-
+dfull <- fread("data/tweets.csv")
 ```
 
+# Whole vocabulary construction
+
 ```{r}
-df <- df %>% 
+dfull <- dfull %>% 
   select(c(id, text)) %>% 
   mutate(hate = 0,
   hate = case_when(hate == 0 ~ "No", 
@@ -43,7 +44,7 @@ df <- df %>%
 ```
 
 ```{r}
-df <- df %>% 
+dfull <- dfull %>% 
   distinct(text, .keep_all = T) %>% 
   mutate(text = tolower(text),
          entities.mentions = ifelse(str_detect(text, "@.{1,15} "), 1, 0),
@@ -54,7 +55,7 @@ df <- df %>%
 ```
 
 ```{r}
-df <- df %>% 
+dfull <- dfull %>% 
   mutate(text = str_replace_all(text, "🏻|🏼|🏽|🏾|🏿", ""),
          text = str_replace_all(text, "\\\\n|&lt", " "), 
          text = str_replace_all(text, "🤣+|😂+", " tokenrisa "),
@@ -67,7 +68,7 @@ df <- df %>%
 ```
 
 ```{r}
-df <- df %>% 
+dfull <- dfull %>% 
   mutate(entities.url = factor(entities.url, levels = c(0,1)),
          entities.mentions = factor(entities.mentions, levels = c(0,1)),
          hateterm = case_when(hateterm == F ~ 0, 
@@ -78,20 +79,27 @@ df <- df %>%
 ```
 
 ```{r}
+set.seed(123)
+dfull <- sample_n(dfull, 30000, replace=F)
 
-corpus <- corpus(df$text, docvars = data.frame(hate = df$hate, hateterm = df$hateterm, mentions = df$entities.mentions, url = df$entities.url))
-summary(corpus)
+```
+
+
+```{r}
+
+fullcorpus <- corpus(dfull$text, docvars = data.frame(hate = dfull$hate, hateterm = dfull$hateterm, mentions = dfull$entities.mentions, url = dfull$entities.url))
+summary(fullcorpus)
 
 ```
 
 ```{r}
 set.seed(1234)
-id <- seq(1:nrow(df))
+id <- seq(1:nrow(dfull))
 
 ```
 
 ```{r}
-dfmat <- corpus %>%  
+dfmatfull <- fullcorpus %>%  
   tokens(remove_punct = T, remove_numbers = T, remove_separators = T) %>% 
   tokens_remove(stopwords("es", source = "nltk")) %>% 
   tokens_wordstem(language = "spanish") %>%
@@ -100,8 +108,11 @@ dfmat <- corpus %>%
   dfm_tfidf() %>% 
   dfm_trim(min_docfreq=5,verbose=TRUE)
 ```
+
 ```{r}
-dfmat
+dfmat_matched <- dfm_match(dfmatfull, features=featnames(dfmat_train))
+actual_class <- docvars(dfmat_matched, "hate")
+names = as.data.frame(featnames(dfmat_matched))
 ```
 
 ```{r}
@@ -110,9 +121,14 @@ write.csv(tokens, file = "data/tokens.txt")
 ```
 
 ```{r}
-
+predictions <- predict(XGB, dfmat_matched, type = "prob")
+predicted_class.XGB <- as.factor(ifelse(predictions[,2] > 0.3, "Yes", "No"))
+dfull$hate <- predicted_class.XGB
 ```
 
+```{r}
+table(dfull$hate)
+```
 
 
 

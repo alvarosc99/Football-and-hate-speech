@@ -165,9 +165,10 @@ dfmat_test <- corpus_subset(corpus, !(id_numeric %in% id_train)) %>%
   dfm_trim(min_docfreq=2,verbose=TRUE)
 
 ```
+
 ```{r}
-dfmat_matched <- dfm_match(dfmat_test, features=featnames(dfmat_train))
-actual_class <- docvars(dfmat_matched, "hate")
+dfmat_matched_train <- dfm_match(dfmat_test, features=featnames(dfmat_train))
+actual_class <- docvars(dfmat_matched_train, "hate")
 names = as.data.frame(featnames(dfmat_matched))
 ```
 
