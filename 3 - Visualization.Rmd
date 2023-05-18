@@ -1,0 +1,65 @@
+---
+title: "3 - Visualization"
+author: "Alejandro Aísa, Álvaro Sanz"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+```
+
+
+# Importing the data
+
+```{r}
+dfull <- read.csv("data/predicted.csv")
+```
+
+# Data transforming
+
+```{r}
+min(dfull$created_at)
+max(dfull$created_at)
+```
+
+```{r}
+
+dfull <- dfull %>% 
+  mutate(created_at = ymd_hms(created_at),
+         created_at = format(created_at, "%Y-%m-%d %H:00:00"))
+
+viz <- dfull %>% 
+  mutate(hate = factor(hate, levels = c("No", "Yes"))) %>% 
+  group_by(created_at) %>% 
+  summarise(No_count = sum(hate == "No", na.rm = TRUE),
+            Yes_count = sum(hate == "Yes", na.rm = TRUE),
+            Total = sum(No_count, Yes_count),
+            Proportion = Yes_count/Total * 100)
+
+```
+
+# Visualization
+
+```{r}
+
+ggplot(viz) +
+  aes(created_at, Proportion) +
+  geom_col() +
+  ylim(c(0,10))
+
+```
+
+
+
+
+
+
+
+

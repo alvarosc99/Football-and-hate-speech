@@ -145,7 +145,7 @@ actual_class <- docvars(dfmat_matched, "hate")
 ```{r}
 predictions <- predict(XGB, dfmat_matched, type = "prob")
 predicted_class.XGB <- as.factor(ifelse(predictions[,2] > 0.3, "Yes", "No"))
-dfull$hate <- as.factor(ifelse(dfull[,8] > 0.3, "Yes", "No"))
+dfull$hate <- as.factor(ifelse(dfull[,10] > 0.3, "Yes", "No"))
 ```
 
 ```{r}
@@ -163,6 +163,16 @@ random_tweets <- hateful_tweets[sample(nrow(hateful_tweets), num_tweets_to_displ
 random_tweets[,text]
 ```
 
+```{r}
+dfull <- fread("data/tweets.csv")
+```
 
+```{r}
+dfull <- dfull %>% 
+  distinct(text, .keep_all = T)
+```
 
+```{r}
+#write.csv(dfull, file = "data/predicted.csv")
+```
 
