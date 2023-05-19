@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 library(ggplot2)
+library(data.table)
 library(lubridate)
 ```
 
@@ -19,7 +20,8 @@ library(lubridate)
 # Importing the data
 
 ```{r}
-dfull <- read.csv("data/predicted.csv")
+#dfull <- read.csv("data/predicted.csv")
+dfull <- fread("data/predicted.csv")
 ```
 
 # Data transforming
@@ -49,17 +51,101 @@ viz <- dfull %>%
 
 ```{r}
 
-ggplot(viz) +
-  aes(created_at, Proportion) +
-  geom_col() +
-  ylim(c(0,10))
+viz %>% 
+  ggplot() +
+  aes(as.POSIXct(created_at), Proportion) +
+  geom_line(group = 1) +
+  ylim(c(0,7)) +
+  scale_y_continuous(
+    labels = function(x) paste0(x, "%")) +
+  scale_x_datetime(date_labels = "%d-%m %H:%00", date_breaks = "12 hours") +
+  theme(axis.ticks.x.bottom = element_blank(),
+        axis.text.x.bottom = element_text(angle = 45, vjust = 0.5),
+        plot.margin = margin(t=0,
+                         r=10,
+                         b=0,
+                         l=0)) +
+  ylab("Proportion of hateful tweets") +
+  xlab("Time when the tweet was sent") 
+  #expand.grid()
+  
 
+```
+
+```{r}
+viz <- viz %>% 
+  mutate(match = case_when(created_at == "2022-11-23 15:00:00" | created_at == "2022-11-23 16:00:00" | created_at == "2022-11-23 17:00:00" | created_at == "2022-11-23 18:00:00" | created_at == "2022-11-23 19:00:00" | created_at == "2022-11-23 20:00:00" | created_at == "2022-11-23 21:00:00" | created_at == "2022-11-23 17:00:00" | created_at == "2022-11-27 18:00:00" | created_at == "2022-11-27 19:00:00" | created_at == "2022-11-27 20:00:00" | created_at == "2022-11-27 21:00:00" | created_at == "2022-11-27 22:00:00" | created_at == "2022-11-27 23:00:00" | created_at == "2022-11-27 24:00:00" | created_at == "2022-12-01 18:00:00" | created_at == "2022-12-01 19:00:00" | created_at == "2022-12-01 20:00:00" | created_at == "2022-12-01 21:00:00" | created_at == "2022-12-01 22:00:00" | created_at == "2022-12-01 23:00:00" | created_at == "2022-12-01 24:00:00" | created_at == "2022-12-06 14:00:00" | created_at == "2022-12-06 15:00:00" | created_at == "2022-12-06 16:00:00" | created_at == "2022-12-06 17:00:00" | created_at == "2022-12-06 18:00:00" | created_at == "2022-12-06 19:00:00" ~ 1,
+                           T ~ 0),
+         match = factor(match, levels = c(0,1)), 
+         costarica = factor(ifelse((match == 1 & day(created_at) == 23), 1, 0), levels = c(0,1)),
+         germany = factor(ifelse((match == 1 & day(created_at) == 27), 1, 0), levels = c(0,1)),
+         japan = factor(ifelse((match == 1 & day(created_at) == 01), 1, 0), levels = c(0,1)),
+         morocco = factor(ifelse((match == 1 & day(created_at) == 06), 1, 0), levels = c(0,1)))
 ```
 
 
 
+# T-tests
 
+All: 
 
+```{r}
 
+s<-split(viz$Proportion,viz$match) #splits the variable price in two groups by gender
 
+#first step: test for equal variances
+var.test(s$`0`, s$`1`, alternative = "two.sided")
+#second step: test for differences of means, knowing that variances are different
+t.test(s$`0`, s$`1` ,alternative="two.sided",mu=0,var.equal=FALSE)  ##The only thing that changes is the last part, var.equal has to be =FALSE. 
+##It also gives the difference's confidence interval --> In this case it's + (both values), so males's proportion is greater. 
+```
+
+Morocco: 
+
+```{r}
+
+s<-split(viz$Proportion,viz$morocco) #splits the variable price in two groups by gender
+
+#first step: test for equal variances
+var.test(s$`0`, s$`1`, alternative = "two.sided")
+#second step: test for differences of means, knowing that variances are different
+t.test(s$`1`, s$`0`, alternative="greater",mu=0.8,var.equal=TRUE)  ##The only thing that changes is the last part, var.equal has to be =FALSE. 
+##It also gives the difference's confidence interval --> In this case it's + (both values), so males's proportion is greater. 
+```
+
+Costa Rica: 
+
+```{r}
+s<-split(viz$Proportion,viz$morocco) #splits the variable price in two groups by gender
+
+#first step: test for equal variances
+var.test(s$`0`, s$`1`, alternative = "two.sided")
+#second step: test for differences of means, knowing that variances are different
+t.test(s$`1`, s$`0`, alternative="greater",mu=0.8,var.equal=TRUE)  ##The only thing that changes is the last part, var.equal has to be =FALSE. 
+##It also gives the difference's confidence interval --> In this case it's + (both values), so males's proportion is greater. 
+```
+
+Japan: 
+
+```{r}
+s<-split(viz$Proportion,viz$morocco) #splits the variable price in two groups by gender
+
+#first step: test for equal variances
+var.test(s$`0`, s$`1`, alternative = "two.sided")
+#second step: test for differences of means, knowing that variances are different
+t.test(s$`1`, s$`0`, alternative="greater",mu=0.8,var.equal=TRUE)  ##The only thing that changes is the last part, var.equal has to be =FALSE. 
+##It also gives the difference's confidence interval --> In this case it's + (both values), so males's proportion is greater. 
+```
+
+Germany: 
+
+```{r}
+s<-split(viz$Proportion,viz$morocco) #splits the variable price in two groups by gender
+
+#first step: test for equal variances
+var.test(s$`0`, s$`1`, alternative = "two.sided")
+#second step: test for differences of means, knowing that variances are different
+t.test(s$`1`, s$`0`, alternative="greater",mu=0.8,var.equal=TRUE)  ##The only thing that changes is the last part, var.equal has to be =FALSE. 
+##It also gives the difference's confidence interval --> In this case it's + (both values), so males's proportion is greater. 
+```
 
