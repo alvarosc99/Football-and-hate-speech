@@ -79,9 +79,18 @@ vizmor <- viz %>%
   filter(match == 1 & morocco == 1)
 
 
-vizz <- viz %>% 
+
+viz %>% 
   ggplot() +
   aes(x = as.POSIXct(created_at), y = Proportion) +
+  geom_rect(aes(xmin=as.POSIXct("2022-11-23 15:00"), xmax=as.POSIXct("2022-11-23 21:00"), ymin=(-Inf), ymax=Inf),
+            alpha=0.1, show.legend=FALSE, fill = "lightgrey") + #Costa Rica
+  geom_rect(aes(xmin=as.POSIXct("2022-11-27 18:00"), xmax=as.POSIXct("2022-11-28 00:00"), ymin=(-Inf), ymax=Inf),
+            alpha=0.1, show.legend=FALSE, fill = "lightgrey") + #Germany
+  geom_rect(aes(xmin=as.POSIXct("2022-12-01 18:00"), xmax=as.POSIXct("2022-12-02 00:00"), ymin=(-Inf), ymax=Inf),
+            alpha=0.1, show.legend=FALSE, fill = "lightgrey") + #Japan
+  geom_rect(aes(xmin=as.POSIXct("2022-12-06 14:00"), xmax=as.POSIXct("2022-12-06 19:00"), ymin=(-Inf), ymax=Inf),
+            alpha=0.01, show.legend=FALSE, fill = "lightgrey") + #Morocco
   geom_line() +
   geom_line(data = vizjap, aes(x = as.POSIXct(created_at), y = Proportion), color = "orange") +
   geom_line(data = vizcr, aes(x = as.POSIXct(created_at), y = Proportion), color = "orange") +
@@ -107,11 +116,27 @@ vizz <- viz %>%
                          l=0),
         plot.title = element_text(size = 20, face = "bold"),
         plot.subtitle = element_text(size = 14, face = "italic"),
-        axis.title = element_text(size = 13)) +
+        axis.title = element_text(size = 13),
+        axis.title.x = element_text(margin = margin(t = 10)),
+        axis.title.y = element_text(margin = margin(r = 10))) +
   ylab("Proportion of hateful tweets") +
   xlab("Time when the tweet was sent") +
   labs(title = "The patterns of Spanish online hate speech",
-       subtitle = "The % of hateful tweets increases the days after games, specially when Spain doesn't win and plays against teams from other continents")
+       subtitle = "The % of hateful tweets increases the days after games, specially when Spain doesn't win and plays against teams from other continents") +
+  annotate(
+    "text", x = as.POSIXct("2022-11-30 06:00"), y = 5,
+    label = "= match",
+    color = "black"
+  ) +
+  annotate(geom = "point", 
+           x = as.POSIXct("2022-11-29 00:00"), y = 5, color = "orange", size = 3, shape = 16) +
+  annotate(
+    "text", x = as.POSIXct("2022-11-30 06:00"), y = 4.5,
+    label = "     = no match",
+    color = "black"
+  ) +
+  annotate(geom = "point", 
+           x = as.POSIXct("2022-11-29 00:00"), y = 4.5, color = "black", size = 3, shape = 16)
   
 vizz
 #ggsave("test.jpeg")
