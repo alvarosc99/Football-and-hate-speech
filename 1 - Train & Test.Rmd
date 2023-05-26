@@ -169,7 +169,6 @@ dfmat_test <- corpus_subset(corpus, !(id_numeric %in% id_train)) %>%
 ```{r}
 dfmat_matched_train <- dfm_match(dfmat_test, features=featnames(dfmat_train))
 actual_class <- docvars(dfmat_matched_train, "hate")
-names = as.data.frame(featnames(dfmat_matched))
 ```
 
 
@@ -234,7 +233,7 @@ XGB <- train(x = dfmat_train,
 
 
 ```{r}
-predicted_prob.XGB <- predict(XGB, newdata=dfmat_matched, type = "prob")
+predicted_prob.XGB <- predict(XGB, newdata=dfmat_matched_train, type = "prob")
 predicted_class.XGB <- as.factor(ifelse(predicted_prob.XGB[,2] > 0.3, "Yes", "No"))
 tab_class.XGB <- table(actual_class,predicted_class.XGB)
 tab_class.XGB

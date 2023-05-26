@@ -66,8 +66,17 @@ sysfonts::font_add_google("Titillium Web", family="titillium")
 showtext::showtext_auto()
 ```
 
-
 ```{r}
+library(png)
+germanyflag <- readPNG("data/images/1200px-Flag_of_Germany.png")
+japanflag <- readPNG("data/images/Flag_of_Japan.png")
+crflag <- readPNG("data/images/Flag_of_Costa_Rica.png")
+morflag <- readPNG("data/images/Flag_of_Morocco.png")
+```
+
+
+```{r, fig.height=5, fig.width=8}
+library(grid)
 
 vizjap <- viz %>% 
   filter(match == 1 & japan == 1)
@@ -90,19 +99,19 @@ viz %>%
   geom_rect(aes(xmin=as.POSIXct("2022-12-01 18:00"), xmax=as.POSIXct("2022-12-02 00:00"), ymin=(-Inf), ymax=Inf),
             alpha=0.1, show.legend=FALSE, fill = "lightgrey") + #Japan
   geom_rect(aes(xmin=as.POSIXct("2022-12-06 14:00"), xmax=as.POSIXct("2022-12-06 19:00"), ymin=(-Inf), ymax=Inf),
-            alpha=0.01, show.legend=FALSE, fill = "lightgrey") + #Morocco
+            alpha=0.1, show.legend=FALSE, fill = "lightgrey") + #Morocco
   geom_line() +
   geom_line(data = vizjap, aes(x = as.POSIXct(created_at), y = Proportion), color = "orange") +
-  geom_line(data = vizcr, aes(x = as.POSIXct(created_at), y = Proportion), color = "orange") +
+  geom_line(data = vizcr, aes(x = as.POSIXct(created_at), y = Proportion), color = "darkgreen") +
   geom_line(data = vizger, aes(x = as.POSIXct(created_at), y = Proportion), color = "orange") +
-  geom_line(data = vizmor, aes(x = as.POSIXct(created_at), y = Proportion), color = "orange") +
+  geom_line(data = vizmor, aes(x = as.POSIXct(created_at), y = Proportion), color = "red") +
   scale_color_manual(aes(match), values = c("black", "orange")) +
   scale_y_continuous(
     limits = c(0,6),
     labels = function(x) paste0(x, "%")) +
   scale_x_datetime(date_labels = "%d/%m %Hh", date_breaks = "12 hours") +
   theme(axis.ticks.x.bottom = element_blank(),
-        axis.text.x.bottom = element_text(angle = 45, vjust = 0.5),
+        axis.text.x.bottom = element_text(angle = 45, vjust = 0.5, hjust = 1),
         text = element_text(family = "titillium", colour = "black"),
         axis.line.y = element_blank(),
         panel.grid.major.x = element_blank(),
@@ -124,21 +133,48 @@ viz %>%
   labs(title = "The patterns of Spanish online hate speech",
        subtitle = "The % of hateful tweets increases the days after games, specially when Spain doesn't win and plays against teams from other continents") +
   annotate(
-    "text", x = as.POSIXct("2022-11-30 06:00"), y = 5,
+    "text", x = as.POSIXct("2022-12-09 06:00"), y = 5.5,
     label = "= match",
     color = "black"
   ) +
   annotate(geom = "point", 
-           x = as.POSIXct("2022-11-29 00:00"), y = 5, color = "orange", size = 3, shape = 16) +
+           x = as.POSIXct("2022-12-08 03:00"), y = 5.5, color = "grey", size = 3, shape = 16, alpha = 0.8) +
   annotate(
-    "text", x = as.POSIXct("2022-11-30 06:00"), y = 4.5,
-    label = "     = no match",
+    "text", x = as.POSIXct("2022-12-09 06:00"), y = 5.1,
+    label = "= Win",
     color = "black"
   ) +
   annotate(geom = "point", 
-           x = as.POSIXct("2022-11-29 00:00"), y = 4.5, color = "black", size = 3, shape = 16)
+           x = as.POSIXct("2022-12-08 03:00"), y = 5.1, color = "darkgreen", size = 3, shape = 16) +
+annotate(
+    "text", x = as.POSIXct("2022-12-09 06:00"), y = 4.8,
+    label = "  = Draw",
+    color = "black"
+  ) +
+  annotate(geom = "point", 
+           x = as.POSIXct("2022-12-08 03:00"), y = 4.8, color = "orange", size = 3, shape = 16) +
+annotate(
+    "text", x = as.POSIXct("2022-12-09 06:00"), y = 4.5,
+    label = " = Loss",
+    color = "black"
+  ) +
+  annotate(geom = "point", 
+           x = as.POSIXct("2022-12-08 03:00"), y = 4.5, color = "red", size = 3, shape = 16) +
+  annotate(geom = "segment", x = as.POSIXct("2022-12-08 03:00"), xend = as.POSIXct("2022-12-10 00:00"), y = 5.3, yend = 5.3, color = "black") +
   
-vizz
+  annotation_custom(rasterGrob(germanyflag, width = unit(1, "npc"), height = unit(1, "npc")),
+                           xmin = as.POSIXct("2022-11-26 06:00:00"), xmax = as.POSIXct("2022-11-27 06:00:00"),
+                           ymin = 5.5, ymax = 6) + #Germany
+  annotation_custom(rasterGrob(crflag, width = unit(1, "npc"), height = unit(1, "npc")),
+                           xmin = as.POSIXct("2022-11-22 03:00:00"), xmax = as.POSIXct("2022-11-23 03:00:00"),
+                           ymin = 5.5, ymax = 6) + #Costa Rica
+  annotation_custom(rasterGrob(japanflag, width = unit(1, "npc"), height = unit(1, "npc")),
+                           xmin = as.POSIXct("2022-11-30 03:00:00"), xmax = as.POSIXct("2022-12-01 03:00:00"),
+                           ymin = 5.5, ymax = 6) + #Japan
+  annotation_custom(rasterGrob(morflag, width = unit(1, "npc"), height = unit(1, "npc")),
+                           xmin = as.POSIXct("2022-12-04 22:00:00"), xmax = as.POSIXct("2022-12-05 22:00:00"),
+                           ymin = 5.5, ymax = 6) #Morocco
+  
 #ggsave("test.jpeg")
 
 ```
