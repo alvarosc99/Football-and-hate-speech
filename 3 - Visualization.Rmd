@@ -33,7 +33,7 @@ max(dfull$created_at)
 ```
 
 ```{r}
-
+dfull2 <- dfull
 dfull <- dfull %>% 
   mutate(created_at = ymd_hms(created_at),
          created_at = format(created_at, "%Y-%m-%d %H:00:00"))
@@ -182,7 +182,56 @@ annotate(
 
 # Inside Spain vs. Morocco
 
-(Zoomed plot)
+```{r}
+dfull2 <- dfull2 %>% 
+  filter(created_at>="2022-12-06 14:00:00" & created_at<"2022-12-07 00:00:00") %>% 
+  mutate(created_at = ymd_hms(created_at),
+         created_at = format(created_at, "%Y-%m-%d %H:%M:00"),
+         created_at = ymd_hms(created_at)) %>% 
+  mutate(hate = factor(hate, levels = c("No", "Yes")),
+         created_at = round_date(created_at, unit = "10 minutes")) %>% 
+  group_by(created_at) %>% 
+  summarise(No_count = sum(hate == "No", na.rm = TRUE),
+            Yes_count = sum(hate == "Yes", na.rm = TRUE),
+            Total = sum(No_count, Yes_count),
+            Proportion = Yes_count/Total * 100)
+```
+
+```{r}
+dfull2 %>% 
+  ggplot() +
+  aes(x = as.POSIXct(created_at), y = Proportion) +
+  geom_rect(aes(xmin=as.POSIXct("2022-12-06 16:00"), xmax=as.POSIXct("2022-12-06 19:00"), ymin=(-Inf), ymax=Inf),
+            alpha=0.1, show.legend=FALSE, fill = "lightgrey") +
+  geom_line() +
+  scale_y_continuous(
+    limits = c(0,6),
+    labels = function(x) paste0(x, "%")) +
+  scale_x_datetime(date_labels = "%H:%M", date_breaks = "10 mins") +
+  theme(axis.text.x.bottom = element_text(angle = 45, vjust = 0.5, hjust = 1),
+        axis.ticks.x.bottom = element_blank(),
+        text = element_text(family = "titillium", colour = "black"),
+        axis.line.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.y = element_line(colour = "lightgrey", linetype = "dotted"),
+        axis.ticks = element_line(color = "lightgrey"),
+        panel.background = element_blank(),
+        plot.title = element_text(size = 20, face = "bold"),
+        plot.subtitle = element_text(size = 14, face = "italic"),
+        axis.title = element_text(size = 13)) +
+  ylab("Proportion of hateful tweets") +
+  xlab("Time when the tweet was sent") +
+  labs(title = "Hate speech concentrates Before & After the match",
+       subtitle = "Blabla") +
+  annotate(
+    "text", x = as.POSIXct("2022-12-06 21:00"), y = 5.5,
+    label = "= match",
+    color = "black"
+  ) +
+  annotate(geom = "point", 
+           x = as.POSIXct("2022-12-06 20:20"), y = 5.5, color = "grey", size = 3, shape = 16, alpha = 0.8)
+```
 
 
 # T-tests
