@@ -75,7 +75,7 @@ morflag <- readPNG("data/images/Flag_of_Morocco.png")
 ```
 
 
-```{r, fig.height=5, fig.width=8}
+```{r,fig.height=5, fig.width=8,  out.height="100%", out.width="100%"}
 library(grid)
 
 vizjap <- viz %>% 
@@ -131,10 +131,10 @@ viz %>%
   ylab("Proportion of hateful tweets") +
   xlab("Time when the tweet was sent") +
   labs(title = "The patterns of Spanish online hate speech",
-       subtitle = "The % of hateful tweets increases the days after games, specially when Spain doesn't win and plays against teams from other continents") +
+       subtitle = "The % of hateful tweets increases the days after games, specially when Spain doesn't win \nand plays against teams from other continents") +
   annotate(
     "text", x = as.POSIXct("2022-12-09 06:00"), y = 5.5,
-    label = "= match",
+    label = "= Match",
     color = "black"
   ) +
   annotate(geom = "point", 
@@ -164,18 +164,126 @@ annotate(
   
   annotation_custom(rasterGrob(germanyflag, width = unit(1, "npc"), height = unit(1, "npc")),
                            xmin = as.POSIXct("2022-11-26 06:00:00"), xmax = as.POSIXct("2022-11-27 06:00:00"),
-                           ymin = 5.5, ymax = 6) + #Germany
+                           ymin = 5.5, ymax = 5.9) + #Germany
   annotation_custom(rasterGrob(crflag, width = unit(1, "npc"), height = unit(1, "npc")),
                            xmin = as.POSIXct("2022-11-22 03:00:00"), xmax = as.POSIXct("2022-11-23 03:00:00"),
-                           ymin = 5.5, ymax = 6) + #Costa Rica
+                           ymin = 5.5, ymax = 5.9) + #Costa Rica
   annotation_custom(rasterGrob(japanflag, width = unit(1, "npc"), height = unit(1, "npc")),
                            xmin = as.POSIXct("2022-11-30 03:00:00"), xmax = as.POSIXct("2022-12-01 03:00:00"),
-                           ymin = 5.5, ymax = 6) + #Japan
+                           ymin = 5.5, ymax = 5.9) + #Japan
   annotation_custom(rasterGrob(morflag, width = unit(1, "npc"), height = unit(1, "npc")),
                            xmin = as.POSIXct("2022-12-04 22:00:00"), xmax = as.POSIXct("2022-12-05 22:00:00"),
-                           ymin = 5.5, ymax = 6) #Morocco
+                           ymin = 5.5, ymax = 5.9) + #Morocco
+  annotate(geom = "segment",
+         x = as.POSIXct("2022-11-26 06:00:00"),
+         xend = as.POSIXct("2022-11-27 06:00:00"),
+         y = 5.9, yend = 5.9,
+         color = "black") +
+annotate(geom = "segment",
+         x = as.POSIXct("2022-11-27 06:00:00"),
+         xend = as.POSIXct("2022-11-27 06:00:00"),
+         y = 5.9, yend = 5.5,
+         color = "black") +
+annotate(geom = "segment",
+         x = as.POSIXct("2022-11-26 06:00:00"),
+         xend = as.POSIXct("2022-11-26 06:00:00"),
+         y = 5.5, yend = 5.9,
+         color = "black") +
+annotate(geom = "segment",
+         x = as.POSIXct("2022-11-26 06:00:00"),
+         xend = as.POSIXct("2022-11-27 06:00:00"),
+         y = 5.5, yend = 5.5,
+         color = "black") +
+annotate(geom = "segment",
+         x = as.POSIXct("2022-11-22 03:00:00"),
+         xend = as.POSIXct("2022-11-23 03:00:00"),
+         y = 5.9, yend = 5.9,
+         color = "black") +
+annotate(geom = "segment",
+         x = as.POSIXct("2022-11-23 03:00:00"),
+         xend = as.POSIXct("2022-11-23 03:00:00"),
+         y = 5.9, yend = 5.5,
+         color = "black") +
+annotate(geom = "segment",
+         x = as.POSIXct("2022-11-22 03:00:00"),
+         xend = as.POSIXct("2022-11-22 03:00:00"),
+         y = 5.5, yend = 5.9,
+         color = "black") +
+annotate(geom = "segment",
+         x = as.POSIXct("2022-11-22 03:00:00"),
+         xend = as.POSIXct("2022-11-23 03:00:00"),
+         y = 5.5, yend = 5.5,
+         color = "black") +
+annotate(geom = "segment",
+         x = as.POSIXct("2022-11-30 03:00:00"),
+         xend = as.POSIXct("2022-12-01 03:00:00"),
+         y = 5.9, yend = 5.9,
+         color = "black") +
+annotate(geom = "segment",
+         x = as.POSIXct("2022-12-01 03:00:00"),
+         xend = as.POSIXct("2022-12-01 03:00:00"),
+         y = 5.9, yend = 5.5,
+         color = "black") +
+annotate(geom = "segment",
+         x = as.POSIXct("2022-11-30 03:00:00"),
+         xend = as.POSIXct("2022-11-30 03:00:00"),
+         y = 5.5, yend = 5.9,
+         color = "black") +
+annotate(geom = "segment",
+         x = as.POSIXct("2022-11-30 03:00:00"),
+         xend = as.POSIXct("2022-12-01 03:00:00"),
+         y = 5.5, yend = 5.5,
+         color = "black") +
+annotate(geom = "segment",
+         x = as.POSIXct("2022-12-04 22:00:00"),
+         xend = as.POSIXct("2022-12-05 22:00:00"),
+         y = 5.9, yend = 5.9,
+         color = "black") +
+annotate(geom = "segment",
+         x = as.POSIXct("2022-12-05 22:00:00"),
+         xend = as.POSIXct("2022-12-05 22:00:00"),
+         y = 5.9, yend = 5.5,
+         color = "black") +
+annotate(geom = "segment",
+         x = as.POSIXct("2022-12-04 22:00:00"),
+         xend = as.POSIXct("2022-12-04 22:00:00"),
+         y = 5.5, yend = 5.9,
+         color = "black") +
+annotate(geom = "segment",
+         x = as.POSIXct("2022-12-04 22:00:00"),
+         xend = as.POSIXct("2022-12-05 22:00:00"),
+         y = 5.5, yend = 5.5,
+         color = "black") +
+# Annotation for Germany (diagonal segment)
+  annotate(geom = "segment",
+         x = as.POSIXct("2022-11-27 06:00:00"),
+         xend = as.POSIXct("2022-11-27 18:00:00"),
+         y = 5.5, yend = 5.3,
+         color = "black") +
+
+# Annotation for Costa Rica (diagonal segment)
+annotate(geom = "segment",
+         x = as.POSIXct("2022-11-23 03:00:00"),
+         xend = as.POSIXct("2022-11-23 15:00:00"),
+         y = 5.5, yend = 5.3,
+         color = "black") +
+
+# Annotation for Japan (diagonal segment)
+annotate(geom = "segment",
+         x = as.POSIXct("2022-12-01 03:00:00"),
+         xend = as.POSIXct("2022-12-01 18:00:00"),
+         y = 5.5, yend = 5.3,
+         color = "black") +
+
+# Annotation for Morocco (diagonal segment)
+annotate(geom = "segment",
+         x = as.POSIXct("2022-12-05 22:00:00"),
+         xend = as.POSIXct("2022-12-06 14:00:00"),
+         y = 5.5, yend = 5.3,
+         color = "black")
+
   
-#ggsave("test.jpeg")
+#ggsave("test.jpeg", width = 14, height = 10, dpi = 300)
 
 ```
 
@@ -207,8 +315,8 @@ dfull2 %>%
   scale_y_continuous(
     limits = c(0,6),
     labels = function(x) paste0(x, "%")) +
-  scale_x_datetime(date_labels = "%H:%M", date_breaks = "10 mins") +
-  theme(axis.text.x.bottom = element_text(angle = 45, vjust = 0.5, hjust = 1),
+  scale_x_datetime(date_labels = "%H:%M", date_breaks = "30 mins") +
+  theme(axis.text.x.bottom = element_text(angle = 45, vjust = 1, hjust = 1, size = 9),
         axis.ticks.x.bottom = element_blank(),
         text = element_text(family = "titillium", colour = "black"),
         axis.line.y = element_blank(),
@@ -219,18 +327,42 @@ dfull2 %>%
         panel.background = element_blank(),
         plot.title = element_text(size = 20, face = "bold"),
         plot.subtitle = element_text(size = 14, face = "italic"),
-        axis.title = element_text(size = 13)) +
+        axis.title = element_text(size = 13),
+        axis.title.x.bottom = element_text(vjust = 0)) +
   ylab("Proportion of hateful tweets") +
   xlab("Time when the tweet was sent") +
   labs(title = "Hate speech concentrates Before & After the match",
        subtitle = "Blabla") +
   annotate(
-    "text", x = as.POSIXct("2022-12-06 21:00"), y = 5.5,
-    label = "= match",
+    "text", x = as.POSIXct("2022-12-06 23:00"), y = 5.5,
+    label = "= Match",
     color = "black"
   ) +
   annotate(geom = "point", 
-           x = as.POSIXct("2022-12-06 20:20"), y = 5.5, color = "grey", size = 3, shape = 16, alpha = 0.8)
+           x = as.POSIXct("2022-12-06 22:25"), y = 5.5, color = "grey", size = 3, shape = 16, alpha = 0.8) +
+  annotation_custom(rasterGrob(morflag, width = unit(1, "npc"), height = unit(1, "npc")),
+                           xmin = as.POSIXct("2022-12-06 17:00:00"), xmax = as.POSIXct("2022-12-06 18:00:00"),
+                           ymin = 5, ymax = 5.8) +
+  annotate(geom = "segment",
+         x = as.POSIXct("2022-12-06 17:00:00"),
+         xend = as.POSIXct("2022-12-06 18:00:00"),
+         y = 5, yend = 5,
+         color = "black") +
+annotate(geom = "segment",
+         x = as.POSIXct("2022-12-06 18:00:00"),
+         xend = as.POSIXct("2022-12-06 18:00:00"),
+         y = 5, yend = 5.8,
+         color = "black") +
+annotate(geom = "segment",
+         x = as.POSIXct("2022-12-06 18:00:00"),
+         xend = as.POSIXct("2022-12-06 17:00:00"),
+         y = 5.8, yend = 5.8,
+         color = "black") +
+annotate(geom = "segment",
+         x = as.POSIXct("2022-12-06 17:00:00"),
+         xend = as.POSIXct("2022-12-06 17:00:00"),
+         y = 5.8, yend = 5,
+         color = "black")
 ```
 
 
