@@ -50,7 +50,7 @@ viz <- dfull %>%
 
 ```{r}
 viz <- viz %>% 
-  mutate(match = case_when(created_at == "2022-11-23 15:00:00" | created_at == "2022-11-23 16:00:00" | created_at == "2022-11-23 17:00:00" | created_at == "2022-11-23 18:00:00" | created_at == "2022-11-23 19:00:00" | created_at == "2022-11-23 20:00:00" | created_at == "2022-11-23 21:00:00" | created_at == "2022-11-23 17:00:00" | created_at == "2022-11-27 18:00:00" | created_at == "2022-11-27 19:00:00" | created_at == "2022-11-27 20:00:00" | created_at == "2022-11-27 21:00:00" | created_at == "2022-11-27 22:00:00" | created_at == "2022-11-27 23:00:00" | created_at == "2022-11-27 24:00:00" | created_at == "2022-12-01 18:00:00" | created_at == "2022-12-01 19:00:00" | created_at == "2022-12-01 20:00:00" | created_at == "2022-12-01 21:00:00" | created_at == "2022-12-01 22:00:00" | created_at == "2022-12-01 23:00:00" | created_at == "2022-12-01 24:00:00" | created_at == "2022-12-06 14:00:00" | created_at == "2022-12-06 15:00:00" | created_at == "2022-12-06 16:00:00" | created_at == "2022-12-06 17:00:00" | created_at == "2022-12-06 18:00:00" | created_at == "2022-12-06 19:00:00" ~ 1,
+  mutate(match = case_when(created_at == "2022-11-23 15:00:00" | created_at == "2022-11-23 16:00:00" | created_at == "2022-11-23 17:00:00" | created_at == "2022-11-23 18:00:00" | created_at == "2022-11-23 19:00:00" | created_at == "2022-11-23 20:00:00" | created_at == "2022-11-23 21:00:00" | created_at == "2022-11-27 17:00:00" | created_at == "2022-11-27 18:00:00" | created_at == "2022-11-27 19:00:00" | created_at == "2022-11-27 20:00:00" | created_at == "2022-11-27 21:00:00" | created_at == "2022-11-27 22:00:00" | created_at == "2022-11-27 23:00:00" | created_at == "2022-11-28 00:00:00" | created_at == "2022-12-01 18:00:00" | created_at == "2022-12-01 19:00:00" | created_at == "2022-12-01 20:00:00" | created_at == "2022-12-01 21:00:00" | created_at == "2022-12-01 22:00:00" | created_at == "2022-12-01 23:00:00" | created_at == "2022-12-02 00:00:00" | created_at == "2022-12-06 14:00:00" | created_at == "2022-12-06 15:00:00" | created_at == "2022-12-06 16:00:00" | created_at == "2022-12-06 17:00:00" | created_at == "2022-12-06 18:00:00" | created_at == "2022-12-06 19:00:00" ~ 1,
                            T ~ 0),
          match = factor(match, levels = c(0,1)), 
          costarica = factor(ifelse((match == 1 & day(created_at) == 23), 1, 0), levels = c(0,1)),
@@ -391,61 +391,105 @@ All:
 
 ```{r}
 
-s<-split(viz$Proportion,viz$match) #splits the variable price in two groups by gender
+s<-split(viz$Proportion,viz$match) #Splitting between moments with a match being played and moments with no match. 
 
-#first step: test for equal variances
+#1st: Test for equal variances
 var.test(s$`0`, s$`1`, alternative = "two.sided")
-#second step: test for differences of means, knowing that variances are different
-t.test(s$`0`, s$`1` ,alternative="two.sided",mu=0,var.equal=FALSE)  ##The only thing that changes is the last part, var.equal has to be =FALSE. 
-##It also gives the difference's confidence interval --> In this case it's + (both values), so males's proportion is greater. 
+
+#P-value is lower than 0.05, so we accept the H1: variances are different. 
+
+
+#2nd step: Test for different means
+
+t.test(s$`1`, s$`0` ,alternative="greater", mu=0, var.equal=FALSE, conf.level = 0.95)
+
+#Not significant. Difference between both types of moments is not greater than 0. 
+
+
 ```
 
 Morocco: 
 
 ```{r}
 
-s<-split(viz$Proportion,viz$morocco) #splits the variable price in two groups by gender
+s<-split(viz$Proportion,viz$morocco)
 
-#first step: test for equal variances
+
 var.test(s$`0`, s$`1`, alternative = "two.sided")
-#second step: test for differences of means, knowing that variances are different
-t.test(s$`1`, s$`0`, alternative="greater",mu=0.8,var.equal=TRUE)  ##The only thing that changes is the last part, var.equal has to be =FALSE. 
-##It also gives the difference's confidence interval --> In this case it's + (both values), so males's proportion is greater. 
+
+t.test(s$`1`, s$`0`, alternative="greater",mu=0,var.equal=TRUE)
+
 ```
 
 Costa Rica: 
 
 ```{r}
-s<-split(viz$Proportion,viz$morocco) #splits the variable price in two groups by gender
+s<-split(viz$Proportion,viz$costarica)
 
-#first step: test for equal variances
 var.test(s$`0`, s$`1`, alternative = "two.sided")
-#second step: test for differences of means, knowing that variances are different
-t.test(s$`1`, s$`0`, alternative="greater",mu=0.8,var.equal=TRUE)  ##The only thing that changes is the last part, var.equal has to be =FALSE. 
-##It also gives the difference's confidence interval --> In this case it's + (both values), so males's proportion is greater. 
+
+t.test(s$`1`, s$`0`, alternative="greater",mu=0,var.equal=TRUE)  
 ```
 
 Japan: 
 
 ```{r}
-s<-split(viz$Proportion,viz$morocco) #splits the variable price in two groups by gender
+s<-split(viz$Proportion,viz$japan) 
 
 #first step: test for equal variances
 var.test(s$`0`, s$`1`, alternative = "two.sided")
-#second step: test for differences of means, knowing that variances are different
-t.test(s$`1`, s$`0`, alternative="greater",mu=0.8,var.equal=TRUE)  ##The only thing that changes is the last part, var.equal has to be =FALSE. 
-##It also gives the difference's confidence interval --> In this case it's + (both values), so males's proportion is greater. 
+
+t.test(s$`1`, s$`0`, alternative="greater",mu=0,var.equal=TRUE) 
 ```
 
 Germany: 
 
 ```{r}
-s<-split(viz$Proportion,viz$morocco) #splits the variable price in two groups by gender
+s<-split(viz$Proportion,viz$germany)
 
-#first step: test for equal variances
 var.test(s$`0`, s$`1`, alternative = "two.sided")
-#second step: test for differences of means, knowing that variances are different
-t.test(s$`1`, s$`0`, alternative="greater",mu=0.8,var.equal=TRUE)  ##The only thing that changes is the last part, var.equal has to be =FALSE. 
-##It also gives the difference's confidence interval --> In this case it's + (both values), so males's proportion is greater. 
+
+t.test(s$`1`, s$`0`, alternative="greater",mu=0,var.equal=TRUE)
+
+```
+
+ANOVA: 
+
+```{r}
+viz <- viz %>% 
+  mutate(match_which = case_when(costarica == 1 ~ "Costa Rica", 
+                                 morocco == 1 ~ "Morocco", 
+                                 germany == 1 ~ "Germany", 
+                                 japan == 1 ~"Japan", 
+                                 T ~ NA), 
+         match_which = factor(match_which, levels = c("Costa Rica", "Morocco", "Germany", "Japan")))
+
+res.aov <- aov(Proportion ~ match_which, data = viz)
+
+summary(res.aov) 
+TukeyHSD(res.aov, which = "match_which")
+
+```
+
+
+After the matches: 
+
+```{r}
+viz <- viz %>% 
+  mutate(created_at = as.POSIXct(created_at),
+    after = case_when(created_at >= "2022-11-23 22:00:00" & created_at <= "2022-11-24 22:00:00" ~ 1,
+                      created_at >= "2022-11-28 00:00:00" & created_at <= "2022-11-29 00:00:00" ~ 1,
+                      created_at >= "2022-12-02 00:00:00" & created_at <= "2022-12-03 00:00:00" ~ 1,
+                      created_at >= "2022-12-06 20:00:00" & created_at <= "2022-12-07 20:00:00" ~ 1,
+                           T ~ 0),
+         after = factor(after, levels = c(0,1)))
+```
+
+```{r}
+s<-split(viz$Proportion,viz$after)
+
+var.test(s$`0`, s$`1`, alternative = "two.sided")
+
+t.test(s$`1`, s$`0`, alternative="greater",mu=0,var.equal=TRUE)
 ```
 
