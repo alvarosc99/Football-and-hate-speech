@@ -394,14 +394,14 @@ All:
 s<-split(viz$Proportion,viz$match) #Splitting between moments with a match being played and moments with no match. 
 
 #1st: Test for equal variances
-var.test(s$`0`, s$`1`, alternative = "two.sided")
+var <- var.test(s$`0`, s$`1`, alternative = "two.sided")
 
 #P-value is lower than 0.05, so we accept the H1: variances are different. 
 
 
 #2nd step: Test for different means
 
-t.test(s$`1`, s$`0` ,alternative="greater", mu=0, var.equal=FALSE, conf.level = 0.95)
+tall <- t.test(s$`1`, s$`0` ,alternative="greater", mu=0, var.equal=FALSE, conf.level = 0.95)
 
 #Not significant. Difference between both types of moments is not greater than 0. 
 
@@ -417,41 +417,10 @@ s<-split(viz$Proportion,viz$morocco)
 
 var.test(s$`0`, s$`1`, alternative = "two.sided")
 
-t.test(s$`1`, s$`0`, alternative="greater",mu=0,var.equal=TRUE)
+tmor <- t.test(s$`1`, s$`0`, alternative="greater",mu=0,var.equal=TRUE)
 
 ```
 
-Costa Rica: 
-
-```{r}
-s<-split(viz$Proportion,viz$costarica)
-
-var.test(s$`0`, s$`1`, alternative = "two.sided")
-
-t.test(s$`1`, s$`0`, alternative="greater",mu=0,var.equal=TRUE)  
-```
-
-Japan: 
-
-```{r}
-s<-split(viz$Proportion,viz$japan) 
-
-#first step: test for equal variances
-var.test(s$`0`, s$`1`, alternative = "two.sided")
-
-t.test(s$`1`, s$`0`, alternative="greater",mu=0,var.equal=TRUE) 
-```
-
-Germany: 
-
-```{r}
-s<-split(viz$Proportion,viz$germany)
-
-var.test(s$`0`, s$`1`, alternative = "two.sided")
-
-t.test(s$`1`, s$`0`, alternative="greater",mu=0,var.equal=TRUE)
-
-```
 
 ANOVA: 
 
@@ -464,12 +433,32 @@ viz <- viz %>%
                                  T ~ NA), 
          match_which = factor(match_which, levels = c("Costa Rica", "Morocco", "Germany", "Japan")))
 
-res.aov <- aov(Proportion ~ match_which, data = viz)
 
-summary(res.aov) 
-TukeyHSD(res.aov, which = "match_which")
+tukey <- viz %>% rstatix::tukey_hsd(Proportion ~ match_which)
+flextable::flextable(tukey) 
 
+flextable::set_flextable_defaults(font.family = "Times New Roman", 
+                                  text.align = "center",
+                                  post_process_all = TRUE
+                                  )
+
+tukeytable <- tukey %>% 
+  select(-c(term, null.value)) %>% 
+  rename("Team 1" = "group1",
+         "Team 2" = "group2", 
+         "Estimate" = "estimate", 
+         "CI Lower" = "conf.low", 
+         "CI Higher" = "conf.high", 
+         "P-value" = "p.adj", 
+         "Significance" = "p.adj.signif") %>% 
+  mutate(Estimate = round(Estimate, 4), 
+         Significance = ifelse(Significance == "****", "***", ifelse(Significance == "ns", "-", ".")), 
+         `P-value` = format(`P-value`, scientific = TRUE)) %>% 
+  flextable::flextable() %>% 
+  flextable::add_header_lines(values = "ANOVA Test for all comparisons between matches")
 ```
+
+
 
 
 After the matches: 
@@ -490,6 +479,39 @@ s<-split(viz$Proportion,viz$after)
 
 var.test(s$`0`, s$`1`, alternative = "two.sided")
 
-t.test(s$`1`, s$`0`, alternative="greater",mu=0,var.equal=TRUE)
+tafter <- t.test(s$`1`, s$`0`, alternative="greater",mu=0,var.equal=TRUE)
 ```
 
+T-tests viz: 
+
+```{r}
+a <- broom::tidy(tall) %>% 
+  mutate(Test = ".") %>% 
+  select(c(Test, estimate, estimate1, estimate2, p.value, conf.low, conf.high, alternative))
+
+b <- broom::tidy(tmor) %>% 
+  mutate(Test = ".") %>% 
+  select(c(Test, estimate, estimate1, estimate2, p.value, conf.low, conf.high, alternative))
+
+c <- broom::tidy(tafter) %>% 
+  mutate(Test = ".") %>% 
+  select(c(Test, estimate, estimate1, estimate2, p.value, conf.low, conf.high, alternative))
+
+ttests <-  rbind(a, b, c)
+
+ttests$Test <- c("All matches", "Vs. Morocco", "After the matches")
+
+teststable <- ttests %>% 
+  rename("Mean of X" = "estimate1", 
+         "Mean of Y" = "estimate2", 
+         "P-value" = "p.value", 
+         "Alternative" = "alternative") %>% 
+  mutate(estimate = round(estimate, 4), 
+         Significance = ifelse(`P-value` < 0.01, "***", ifelse(`P-value` < 0.05, "**", ifelse(`P-value` < 0.1, "*", ifelse(`P-value` >= 0.1, "-", "-")))), 
+         `P-value` = ifelse(`P-value` < 0.1, format(`P-value`, scientific = T), round(`P-value`, 4))) %>% 
+  select(-c(conf.low, conf.high)) %>% 
+flextable::flextable() %>% 
+  flextable::add_header_lines(values = "Comparisons in the level of hate speech (T-Tests)")
+
+flextable::save_as_docx(teststable, tukeytable, path = "tables.docx", pr_section = prop_section(page_size(width = 12, height = 8)), page_mar(bottom = 1, top = 1, left=0, right = 0))
+```
