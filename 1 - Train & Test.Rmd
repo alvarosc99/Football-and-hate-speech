@@ -44,6 +44,7 @@ annotation_c <- read.delim("data/hateval/hateval2019_es_train.csv", sep = ",") %
   select(-c(TR, AG)) %>% 
   rename(hate = HS) 
 
+table(df$hate)
 ```
 
 
