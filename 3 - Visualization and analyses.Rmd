@@ -25,6 +25,28 @@ library(showtext)
 dfull <- fread("data/predicted.csv")
 ```
 
+# Sample of the predicted tweets
+
+```{r}
+table(dfull$hate)
+```
+
+```{r}
+set.seed(2531)
+num_tweets_to_display <- 3
+
+# Filter the dataframe to select only the hateful tweets
+hateful_tweets <- dfull[dfull$hate == "Yes", ]
+
+# Randomly select a specified number of tweets from the hateful tweets
+random_tweets <- hateful_tweets[sample(nrow(hateful_tweets), num_tweets_to_display), ]
+
+# Display the randomly selected tweets
+table <- random_tweets[,text]
+
+
+```
+
 # Data transforming
 
 ```{r}
@@ -101,6 +123,7 @@ viz %>%
   geom_rect(aes(xmin=as.POSIXct("2022-12-06 14:00"), xmax=as.POSIXct("2022-12-06 19:00"), ymin=(-Inf), ymax=Inf),
             alpha=0.1, show.legend=FALSE, fill = "lightgrey") + #Morocco
   geom_line(size = 0.3) +
+  geom_smooth(method = "loess", size = 0.3) +
   geom_line(data = vizjap, aes(x = as.POSIXct(created_at), y = Proportion), color = "orange") +
   geom_line(data = vizcr, aes(x = as.POSIXct(created_at), y = Proportion), color = "darkgreen") +
   geom_line(data = vizger, aes(x = as.POSIXct(created_at), y = Proportion), color = "orange") +
@@ -289,7 +312,7 @@ tmp_file <- tempfile(fileext = ".png")
 ggsave(filename = tmp_file, width = 7, height = 4.5, dpi = 300, device = "png")
 browseURL(tmp_file)
 
-ggsave("test.jpeg", width = 7.5, height = 4.5, dpi = 300)
+#ggsave("test.jpeg", width = 7.5, height = 4.5, dpi = 300)
 
 ```
 
@@ -319,6 +342,8 @@ dfull2 %>%
   geom_rect(aes(xmin=as.POSIXct("2022-12-06 17:00"), xmax=as.POSIXct("2022-12-06 20:00"), ymin=(-Inf), ymax=Inf),
             alpha=0.05, show.legend=FALSE, fill = "lightgrey") +
   geom_line(size = 0.3) +
+  annotate(geom = "segment", x = as.POSIXct("2022-12-06 18:35"), xend = as.POSIXct("2022-12-06 18:35"), y = 0, yend = Inf, alpha = 0.3, linetype = "dashed") +
+  geom_smooth(method = "loess", size = 0.5) +
   scale_y_continuous(
     limits = c(0,6),
     labels = function(x) paste0(x, "%")) +
@@ -381,7 +406,7 @@ tmp_file <- tempfile(fileext = ".png")
 ggsave(filename = tmp_file, width = 7.5, height = 4.5, dpi = 300, device = "png")
 browseURL(tmp_file)
 
-ggsave("morocco.png", width = 7.5, height = 4.5, dpi = 300)
+#ggsave("morocco.png", width = 7.5, height = 4.5, dpi = 300)
 ```
 
 

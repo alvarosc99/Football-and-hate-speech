@@ -148,20 +148,6 @@ predicted_class.XGB <- as.factor(ifelse(predictions[,2] > 0.3, "Yes", "No"))
 dfull$hate <- as.factor(ifelse(dfull[,10] > 0.3, "Yes", "No"))
 ```
 
-```{r}
-table(dfull$hate)
-
-num_tweets_to_display <- 5
-
-# Filter the dataframe to select only the hateful tweets
-hateful_tweets <- dfull[dfull$hate == "Yes", ]
-
-# Randomly select a specified number of tweets from the hateful tweets
-random_tweets <- hateful_tweets[sample(nrow(hateful_tweets), num_tweets_to_display), ]
-
-# Display the randomly selected tweets
-random_tweets[,text]
-```
 
 ```{r}
 dfull <- fread("data/tweets.csv")
