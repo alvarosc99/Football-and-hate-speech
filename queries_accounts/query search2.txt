@@ -1,0 +1,33 @@
+Queries: 
+0. General structure:
+() place_country:es -is:retweet -is:nullcast max_results=x since:2022-11-20 until:2022-12-10
+
+1. Football players of the teams involved (Total 1,5M max tweets):
+a. Costa Rica: 
+(keylor OR navas OR "keylor navas" OR bennette OR sequeira OR alvarado OR duarte OR "francisco calvo" OR vargas OR "juan pablo vargas" OR contreras OR "bryan oviedo" OR aguilera OR waston OR wilson OR matarrita OR borges OR fuller OR tejeda OR "gerson torres" OR venegas OR chacón OR salas) place_country:es -is:retweet -is:nullcast max_results=200000 since:2022-11-20 until:2022-12-10
+
+b. Spain: 
+(unai simón OR simon OR laporte OR azpilicueta OR koke OR soler OR "carlos soler" OR morata OR nico williams OR williams OR dani olmo OR olmo OR busquets OR asensio OR ansu fati OR ansu OR carvajal OR ferran OR ferran torres OR jordi alba OR alba OR llorente OR marcos llorente OR llorente OR pedri OR gavi OR sarabia OR eric garcía OR guillamón OR yeremi pino OR pau torres) place_country:es -is:retweet -is:nullcast max_results=500000 since:2022-11-20 until:2022-12-10
+
+c. Germany:
+(fullkrug OR sané OR hofmann OR musiala OR kimmich OR goretzka OR rudiger OR sule OR klostermann OR neuer OR gnabry OR gundogan OR muller OR havertz OR kehrer OR ter stegen OR moukoko OR gotze OR adeyemi OR flick) place_country:es -is:retweet -is:nullcast max_results=300000 since:2022-11-20 until:2022-12-10
+
+d. Morocco:
+(ziyech OR hakimi OR achraf OR saiss OR bono OR Bounou OR boufal OR mazraoui OR abde OR sabiri OR en-nesyri OR youssef OR ounahi OR amrabat OR sofyan amrabat OR abderrazak hamdallah OR hamdallah OR aboukhlal OR aguerd OR el khannous OR cheddira OR zaroury OR amallah OR chair OR banoun OR attiyat allah OR jabrane OR el yamiq OR regragui OR "walid regragui") place_country:es -is:retweet -is:nullcast max_results=300000 since:2022-11-20 until:2022-12-10
+
+e. Japan: 
+(mitoma OR kubo OR take kubo OR take OR minamino OR tomiyasu OR yoshida OR tanaka OR ito OR doan OR schmidt OR ueda OR ito OR hiroki OR nagatomo OR itakura OR soma OR machino OR taniguchi OR maeda OR asano OR endo OR gonda OR morita OR kawashima OR sakai OR yamane) place_country:es -is:retweet -is:nullcast max_results=200000 since:2022-11-20 until:2022-12-10
+
+2. Football teams and countries involved (Total 1M max tweets): 
+(alemania OR alemanes OR aleman OR japon OR japoneses OR japones OR marruecos OR marroquies OR marroquis OR marroqui OR costa rica OR costarricenses OR costarricense) place_country:es -is:retweet -is:nullcast max_results=1000000 since:2022-11-20 until:2022-12-10
+
+3. Football terms and topics (Total 1M max tweets): 
+(falta OR entrada OR expulsado OR expulsion OR arbitro OR arbitros OR jugada OR var OR fuera de juego OR descanso OR banquillo OR entrenador OR cambio OR prórroga OR penaltis OR penalti OR revisión OR gol OR golazo OR parada OR paradon OR delantero OR defensa OR centrocampista OR lateral OR portero OR delanteros OR defensas OR laterales OR centrocampistas OR porteros OR entrenadores OR tarjeta OR amarilla OR roja OR corner OR balon OR aficion OR alineación OR aficionado OR aficionados OR chut OR capitan OR capitanes OR lesion OR lesionado OR lesiones OR táctica OR campo de futbol OR chupon OR contrataque OR contraataques OR finta OR fintas OR futbolista OR futbolistas OR espinillera OR espinilleras OR FIFA OR uefa OR himno OR escudo OR equipacion OR "juez de linea" OR "linea de fondo" OR "linea de banda" OR "fuera de banda" OR mano OR pase OR pases OR centro OR regate OR regates OR "saque de banda" OR sancion OR sanciones OR tactica OR utillero) place_country:es -is:retweet -is:nullcast max_results=1000000 since:2022-11-20 until:2022-12-10
+
+4. Mentions and replies to players and national teams (Total 1M max tweets):
+a. National teams:
+(to:SEFutbol OR to:DFB_Team OR to:EnMaroc OR to:jfa_en OR to:fedefutbolcrc) place_country:es -is:retweet -is:nullcast max_results=500000 since:2022-11-20 until:2022-12-10
+
+b. Players involved (who have twitter account): 
+(to:Laporte OR to:CesarAzpi OR to:koke6 OR to:Carlos10Soler OR to:AlvaroMorata OR to:daniolmo7 OR to:5sergiob OR to:marcoasensio10 OR to:ANSUFATI OR to:DaniCarvajal92 OR to:FerranTorres20 OR to:JordiAlba OR to:marcosllorente OR to:Pedri OR to:Pablosarabia92 OR to:ericgm3 OR to:HGuillamon OR to:pautorres OR to:AchrafHakimi OR to:sosoboufal19 OR to:As10Sabiri OR to:ennesyri9 OR to:YAitbennasser OR to:AzzedineOunahi OR to:NAmrabat53 OR to:Hamedallah_9 OR to:ZAboukhlal OR to:AguerdNayef OR to:yahyajabrane5 OR to:jawadelyamiq OR to:leroy_sane OR to:JamalMusiala OR to:leongoretzka_ OR to:ToniRuediger OR to:lukaskl96 OR to:Manuel_Neuer OR to:SergeGnabry OR to:IlkayGuendogan OR to:kaihavertz29 OR to:KehrerThilo OR to:mterstegen1 OR to:karim_adeyemi OR to:kaoru_mitoma OR to:takumina0116 OR to:doan_ritsu OR to:NavasKeylor OR to:Jewisonoficial9 OR to:barlon_11 OR to:calvo05oficial OR to:_juanpavargas OR to:Bryan_Oviedo) place_country:es -is:retweet -is:nullcast max_results=500000 since:2022-11-20 until:2022-12-10
+

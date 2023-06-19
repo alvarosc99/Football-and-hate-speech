@@ -2,3 +2,24 @@
 .Rhistory
 .RData
 .Ruserdata
+data/football_mentions_players.csv.gz
+data/football_mentions_teams.csv.gz
+data/football_players_cr.csv.gz
+data/football_players_de.csv.gz
+data/football_players_es.csv.gz
+data/football_players_jp.csv.gz
+data/football_players_ma.csv.gz
+data/football_teams.csv.gz
+data/football_terms.csv.gz
+data/predicted.xlsx
+data/preprocessed.xlsx
+data/SEFutbol.csv.gz
+data/SEFutbol_sample.csv.gz
+data/tokens.txt
+data/lang
+data/hateval
+data/predicted.csv
+data/preprocessed.csv
+data/tweets.csv
+data/HaterNet.txt
+images/Literature review
