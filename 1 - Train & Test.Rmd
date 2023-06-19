@@ -92,41 +92,6 @@ df <- df %>%
          text = stringi::stri_replace_all_regex(text, "[^[:alnum:][:space:]]+|\\p{So}+|[0-9]+", ""))
 ```
 
-
-
-## (Deprecated)
-Tokenizing and misspellings correction: 
-
-```{r eval=FALSE, include=FALSE}
-tidy_df <- df %>% 
-  unnest_tokens(word, text)
-
-tidy_df$word <- str_replace_all(tidy_df$word, "(?:^|\\s)q\\b", "que")
-tidy_df$word <- str_replace_all(tidy_df$word, "(?:^|\\s)xq\\b", "porque")
-tidy_df$word <- str_replace_all(tidy_df$word, "(?:^|\\s)xk\\b", "porque")
-tidy_df$word <- str_replace_all(tidy_df$word, "(?:^|\\s)k\\b", "que")
-
-```
-
-Stopwords removal and stemming:
-
-```{r eval=FALSE, include=FALSE}
-#lemmas <- fread("Lemmatizer/200918/spdictionary.csv")
-#lemmas <- lemmas[-which(word=="moro"),]
-
-stop <- as.tibble(stopwords("es", source = "nltk")) %>% 
-  rename(word = value) 
-stop <- stop[!(stop$word %in% c("sin", "no", "contra", "poco", "pero")), ]
-
-tidy_df <- tidy_df %>% 
-  anti_join(stop) %>% 
-  mutate(word = wordStem(word, language = "spanish"))
-
-#tidy_df$word <- ifelse(is.na(match(tidy_df$word, lemmas$word)), tidy_df$word, lemmas$canonical[match(tidy_df$word, lemmas$word)])
-  
-```
-
-
 # Building the model
 
 ## Corpus and DFM
@@ -241,8 +206,23 @@ tab_class.XGB
 ```
 
 ```{r}
-confusionMatrix(tab_class.XGB, mode="everything", positive="Yes")
+confusion_matrix <- confusionMatrix(tab_class.XGB, mode="everything", positive="Yes")
+confusion_matrix
 ```
+
+```{r}
+confusion_matrix_df <- as.tibble(confusion_matrix_obj$table)
+library(cvms)
+plot_cm <- plot_confusion_matrix(confusion_matrix_df, 
+                      target_col = "actual_class", 
+                      prediction_col = "predicted_class.XGB",
+                      counts_col = "n", 
+                      class_order = c("Yes", "No"))
+plot_cm
+
+ggsave("confusionmatrix.jpeg", plot = plot_cm, width = 5, height = 5, dpi = 300)
+```
+
 
 ```{r}
 

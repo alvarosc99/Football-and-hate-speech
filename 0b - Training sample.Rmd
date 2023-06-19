@@ -28,6 +28,15 @@ library(stopwords)
 ```{r}
 df <- fread("data/tweets.csv")
 ```
+IDs extraction, for replicability purposes: 
+```{r}
+ids <- df %>% 
+  select(id) %>% 
+  as.vector()
+
+write.table(ids, file = "data/tweetsIDS.txt", row.names = F)
+```
+
 
 # 1. Manual annotation
 

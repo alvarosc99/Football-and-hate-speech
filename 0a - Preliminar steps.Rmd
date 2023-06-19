@@ -44,7 +44,6 @@ tweets <- bind_rows(data1, data2, data3, data4, data5, data6, data7, data8, data
 profiles <- data.table::fread("data/SEFutbol.csv.gz")
 ```
 
-Interesting variables: public_metrics.followers_count , public_metrics.following_count, public_metrics.tweet_count , created_at
 
 ```{r}
  
@@ -126,9 +125,9 @@ profiles %>%
 
 summary(profiles$public_metrics.tweet_count)
 
-
-
 ```
+
+
 ```{r}
 profiles %>% 
   filter(public_metrics.tweet_count > 10, public_metrics.tweet_count < 50000) %>% 
@@ -162,10 +161,10 @@ filter1 <- profiles %>%
 sample <- sample(filter1$id, 30000, replace = FALSE)
 
 sampletext <- as.character(sample)
-write.table(sampletext, file = "sample.txt", row.names = FALSE)
-
-
+#write.table(sampletext, file = "sample.txt", row.names = FALSE)
 ```
+
+# Importing the whole dataset
 
 ```{r}
 SEF <- as.data.frame(data.table::fread("data/SEFutbol_sample.csv.gz"))
@@ -173,7 +172,6 @@ SEF <- as.data.frame(data.table::fread("data/SEFutbol_sample.csv.gz"))
 SEF <- SEF %>% 
   select(created_at, text)
 
-filtered_df <- filter(SEF, grepl("negro", text))
 ```
 
 ```{r}
@@ -202,7 +200,7 @@ tweetstotal <- tweetstotal %>%
 Export all tweets: 
 ```{r}
 
-write.csv(tweetstotal, file = "data/tweets.csv", row.names = FALSE)
+#write.csv(tweetstotal, file = "data/tweets.csv", row.names = FALSE)
 
 ```
 
